@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>THE REPORT — A Media Network</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=Noto+Nastaliq+Urdu:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <img src="/assets/logo.png" alt="The Report logo">
+    <div class="word"><b>THE REPORT</b><span>A MEDIA NETWORK</span></div>
+  </div>
+</header>
+
+<main>
+
+  <!-- HOMEPAGE - 3 BIG BUTTONS -->
+  <section class="page active" id="homepage">
+    <div class="homepage-container">
+      <h1 class="welcome-title">Welcome to THE REPORT</h1>
+      <p class="welcome-subtitle">Choose your destination</p>
+      <div class="homepage-buttons">
+        <button class="homepage-btn" data-page="services">
+          <span class="btn-icon">💼</span>
+          <span class="btn-title">The Report Media Solutions</span>
+          <span class="btn-desc">Our Professional Services</span>
+        </button>
+        <button class="homepage-btn" data-page="news-urdu">
+          <span class="btn-icon">📰</span>
+          <span class="btn-title urdu">The Report Urdu</span>
+          <span class="btn-desc urdu">اردو میں تازہ ترین خبریں</span>
+        </button>
+        <button class="homepage-btn" data-page="news-english">
+          <span class="btn-icon">📱</span>
+          <span class="btn-title">The Report English</span>
+          <span class="btn-desc">Latest News in English</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SERVICES PAGE -->
+  <section class="page" id="services">
+    <div class="back-to-home">
+      <button class="back-btn" onclick="goToHomepage()">← Back to Home</button>
+    </div>
+    <div class="hero">
+      <div class="eyebrow-red">YOUR BRAND</div>
+      <h1>Solutions built around<br>your business needs.</h1>
+      <p class="lede">Reliable, professional services designed to help your business move forward with confidence.</p>
+      <div class="hero-actions">
+        <button class="primary-btn">Get a Free Quote</button>
+        <button class="ghost-btn">Get Started</button>
+      </div>
+    </div>
+
+    <div class="section-head">
+      <div class="k">OUR CORE SERVICES</div>
+      <h2>Clear solutions, presented simply.</h2>
+    </div>
+    <div class="services-grid">
+      <div class="svc-card">
+        <div class="svc-num">01</div>
+        <h3>Consulting</h3>
+        <p>Tailored guidance and practical solutions for your requirements.</p>
+        <a href="#">Learn More →</a>
+      </div>
+      <div class="svc-card">
+        <div class="svc-num">02</div>
+        <h3>Digital Services</h3>
+        <p>Modern digital services built around quality and reliability.</p>
+        <a href="#">Learn More →</a>
+      </div>
+      <div class="svc-card">
+        <div class="svc-num">03</div>
+        <h3>Business Support</h3>
+        <p>Responsive assistance to keep your operations moving.</p>
+        <a href="#">Learn More →</a>
+      </div>
+    </div>
+
+    <div class="why-strip">
+      <div class="section-head">
+        <div class="k">WHY CHOOSE US</div>
+        <h2>Standards you can rely on.</h2>
+      </div>
+      <div class="why-grid">
+        <div class="why-item"><div class="why-check">✓</div><div><h4>Quality</h4><p>Professional standards</p></div></div>
+        <div class="why-item"><div class="why-check">✓</div><div><h4>Reliable</h4><p>Consistent delivery</p></div></div>
+        <div class="why-item"><div class="why-check">✓</div><div><h4>Responsive</h4><p>Support when needed</p></div></div>
+        <div class="why-item"><div class="why-check">✓</div><div><h4>Focused</h4><p>Solutions for your goals</p></div></div>
+      </div>
+    </div>
+
+    <div class="testimonial">
+      <div class="stars">★★★★★</div>
+      <p>"Professional, clear and easy to work with."</p>
+      <span>— Client Testimonial</span>
+    </div>
+
+    <div class="cta-band">
+      <h3>Ready to get started?</h3>
+      <button>Get a free quote today →</button>
+    </div>
+  </section>
+
+  <!-- URDU NEWS PAGE (rendered dynamically by js/app.js from /api/news) -->
+  <section class="page" id="news-urdu">
+    <div class="back-to-home">
+      <button class="back-btn" onclick="goToHomepage()">← Back to Home</button>
+    </div>
+    <div class="news-hero">
+      <h1 class="urdu">تازہ ترین خبریں</h1>
+      <p class="urdu">پاکستان اور دنیا کی تازہ ترین خبریں — سب ایک ہی جگہ پر</p>
+      <div class="search-row">
+        <select id="categoryFilterUrdu">
+          <option value="">تمام خبریں</option>
+          <option value="general">عام خبریں</option>
+          <option value="business">کاروبار</option>
+          <option value="technology">ٹیکنالوجی</option>
+          <option value="entertainment">تفریح</option>
+          <option value="sports">کھیل</option>
+        </select>
+        <input type="text" id="searchInputUrdu" placeholder="خبر تلاش کریں...">
+      </div>
+    </div>
+
+    <div class="news-body">
+      <div>
+        <div id="featuredSlotUrdu"><p class="urdu loading-msg">خبریں لوڈ ہو رہی ہیں...</p></div>
+        <div class="news-grid" id="newsListUrdu"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ENGLISH NEWS PAGE -->
+  <section class="page" id="news-english">
+    <div class="back-to-home">
+      <button class="back-btn" onclick="goToHomepage()">← Back to Home</button>
+    </div>
+    <div class="news-hero">
+      <h1>Latest News</h1>
+      <p>Stay updated with the latest news from Pakistan and around the world</p>
+      <div class="search-row">
+        <select id="categoryFilterEnglish">
+          <option value="">All News</option>
+          <option value="general">General</option>
+          <option value="business">Business</option>
+          <option value="technology">Technology</option>
+          <option value="entertainment">Entertainment</option>
+          <option value="sports">Sports</option>
+        </select>
+        <input type="text" id="searchInputEnglish" placeholder="Search news...">
+      </div>
+    </div>
+
+    <div class="news-body">
+      <div>
+        <div id="featuredSlotEnglish"><p class="loading-msg">Loading news...</p></div>
+        <div class="news-grid" id="newsListEnglish"></div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="brand">
+    <img src="/assets/logo.png" alt="The Report logo" style="width:36px;height:36px;">
+    <div class="word"><b>THE REPORT</b><span>A MEDIA NETWORK</span></div>
+  </div>
+  <p>Professional services. Clear communication. Real results.</p>
+  <p>© 2026 The Report — A Media Network</p>
+  <p class="footer-credit">Powered by <strong>Zarvity Media</strong></p>
+</footer>
+
+<script src="/js/app.js"></script>
+</body>
+</html>
