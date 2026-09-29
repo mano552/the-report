@@ -330,3 +330,33 @@ document.getElementById("categoryFilterEnglish")?.addEventListener("change", () 
 });
 
 // --- Handle direct hash navigation (removed - now homepage first) ---
+
+// --- Contact Form WhatsApp Integration ---
+const contactForm = document.getElementById("contactForm");
+if (contactForm) {
+  contactForm.addEventListener("submit", function(e) {
+    e.preventDefault();
+    
+    const name = document.getElementById("contactName").value.trim();
+    const email = document.getElementById("contactEmail").value.trim();
+    const phone = document.getElementById("contactPhone").value.trim();
+    const message = document.getElementById("contactMessage").value.trim();
+    
+    // WhatsApp number (without + and spaces)
+    const whatsappNumber = "923054741419";
+    
+    // Create WhatsApp message
+    const whatsappMessage = `*New Contact Form Submission*%0A%0A` +
+      `*Name:* ${encodeURIComponent(name)}%0A` +
+      `*Email:* ${encodeURIComponent(email)}%0A` +
+      `*Phone:* ${encodeURIComponent(phone)}%0A%0A` +
+      `*Message:*%0A${encodeURIComponent(message)}`;
+    
+    // Open WhatsApp with pre-filled message
+    const whatsappURL = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
+    window.open(whatsappURL, '_blank');
+    
+    // Reset form
+    contactForm.reset();
+  });
+}
