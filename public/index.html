@@ -48,7 +48,7 @@
   <!-- SERVICES PAGE -->
   <section class="page" id="services">
     <div class="back-to-home">
-      <button class="back-btn" onclick="goToHomepage()">← Back to Home</button>
+      <button class="back-btn" data-nav="/">← Back to Home</button>
     </div>
     <div class="hero">
       <div class="eyebrow-red">YOUR BRAND</div>
@@ -140,7 +140,7 @@
   <!-- URDU NEWS PAGE (rendered dynamically by js/app.js from /api/news) -->
   <section class="page" id="news-urdu">
     <div class="back-to-home">
-      <button class="back-btn" onclick="goToHomepage()">← Back to Home</button>
+      <button class="back-btn" data-nav="/">← Back to Home</button>
     </div>
     <div class="news-hero">
       <h1 class="urdu">تازہ ترین خبریں</h1>
@@ -169,7 +169,7 @@
   <!-- ENGLISH NEWS PAGE -->
   <section class="page" id="news-english">
     <div class="back-to-home">
-      <button class="back-btn" onclick="goToHomepage()">← Back to Home</button>
+      <button class="back-btn" data-nav="/">← Back to Home</button>
     </div>
     <div class="news-hero">
       <h1>Latest News</h1>
@@ -193,6 +193,14 @@
         <div class="news-grid" id="newsListEnglish"></div>
       </div>
     </div>
+  </section>
+
+  <!-- SINGLE STORY PAGE (opens on OUR site at /news/<id>, rendered by js/app.js) -->
+  <section class="page" id="article">
+    <div class="back-to-home">
+      <button class="back-btn" id="articleBackBtn">← Back to News</button>
+    </div>
+    <div id="articleSlot"><p class="loading-msg">Loading…</p></div>
   </section>
 
 </main>

@@ -1,335 +1,288 @@
-// --- Homepage button navigation ---
-const homepageButtons = document.querySelectorAll(".homepage-btn");
-homepageButtons.forEach((btn) => {
-  btn.addEventListener("click", () => {
-    const targetPage = btn.dataset.page;
-    
-    document.querySelectorAll(".page").forEach((p) => p.classList.remove("active"));
-    document.getElementById(targetPage).classList.add("active");
-    window.scrollTo({ top: 0, behavior: "smooth" });
-    
-    // Load news on demand
-    if (targetPage === "news-urdu" && !urduNewsLoaded) {
-      loadUrduNews();
-    } else if (targetPage === "news-english" && !englishNewsLoaded) {
-      loadEnglishNews();
-    }
-  });
-});
+// =====================================================================
+// THE REPORT — front-end
+// Pages: /  (home) · /english · /urdu · /services · /news/<id> (one story)
+// Stories now open ON OUR SITE (/news/<id>). The original source is only
+// credited with a small link at the bottom of the story page.
+// =====================================================================
 
-// --- Back to homepage function ---
-function goToHomepage() {
+const PAGE_FOR_PATH = { "/": "homepage", "/english": "news-english", "/urdu": "news-urdu", "/services": "services" };
+const PATH_FOR_PAGE = { homepage: "/", "news-english": "/english", "news-urdu": "/urdu", services: "/services" };
+
+const LANG = {
+  urdu: {
+    page: "news-urdu", path: "/urdu", rtl: true,
+    featured: "featuredSlotUrdu", list: "newsListUrdu", search: "searchInputUrdu", filter: "categoryFilterUrdu",
+    t: {
+      loading: "خبریں لوڈ ہو رہی ہیں...", none: "ابھی کوئی خبر شائع نہیں ہوئی۔ جلد حاضر ہوں گے۔",
+      noMatch: "کوئی خبر نہیں ملی۔", error: "خبریں لوڈ نہیں ہو سکیں۔ دوبارہ کوشش کریں۔",
+      badge: "نمایاں خبر", readFull: "مکمل خبر پڑھیں ←", readMore: "مزید پڑھیں ←",
+      back: "← خبروں پر واپس", source: "ماخذ", notFound: "یہ خبر موجود نہیں یا ہٹا دی گئی ہے۔",
+    },
+  },
+  english: {
+    page: "news-english", path: "/english", rtl: false,
+    featured: "featuredSlotEnglish", list: "newsListEnglish", search: "searchInputEnglish", filter: "categoryFilterEnglish",
+    t: {
+      loading: "Loading news...", none: "No stories published yet. Please check back soon.",
+      noMatch: "No news found.", error: "Could not load news. Please try again.",
+      badge: "FEATURED NEWS", readFull: "Read Full Story →", readMore: "Read More →",
+      back: "← Back to News", source: "Source", notFound: "This story does not exist or was removed.",
+    },
+  },
+};
+
+const cache = { urdu: null, english: null }; // stories per language, once loaded
+
+// ---------------- Router ----------------
+function showPage(id) {
   document.querySelectorAll(".page").forEach((p) => p.classList.remove("active"));
-  document.getElementById("homepage").classList.add("active");
+  document.getElementById(id).classList.add("active");
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-// --- News loading state ---
-let urduNewsLoaded = false;
-let englishNewsLoaded = false;
-let allUrduNews = [];
-let allEnglishNews = [];
+function navigate(path, replace = false) {
+  if (path !== location.pathname) history[replace ? "replaceState" : "pushState"]({}, "", path);
+  route();
+}
 
-// --- Load Urdu News from Backend or API ---
-async function loadUrduNews() {
-  const featuredSlot = document.getElementById("featuredSlotUrdu");
-  const listSlot = document.getElementById("newsListUrdu");
-  
-  featuredSlot.innerHTML = `<p class="urdu loading-msg">خبریں لوڈ ہو رہی ہیں...</p>`;
-  
+function route() {
+  const path = location.pathname.replace(/\/+$/, "") || "/";
+  const m = path.match(/^\/news\/([^/]+)$/);
+  if (m) {
+    showPage("article");
+    loadArticle(decodeURIComponent(m[1]));
+    return;
+  }
+  document.title = "THE REPORT — A Media Network";
+  const page = PAGE_FOR_PATH[path] || "homepage";
+  showPage(page);
+  if (page === "news-urdu") loadNews("urdu");
+  if (page === "news-english") loadNews("english");
+}
+
+window.addEventListener("popstate", route);
+
+// Any element with data-nav="/path" (buttons, cards, links) navigates inside the site.
+document.addEventListener("click", (e) => {
+  const el = e.target.closest("[data-nav]");
+  if (!el) return;
+  if (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1) return; // let "open in new tab" work on links
+  e.preventDefault();
+  navigate(el.dataset.nav);
+});
+
+// Home page big buttons
+document.querySelectorAll(".homepage-btn").forEach((btn) => {
+  btn.addEventListener("click", () => navigate(PATH_FOR_PAGE[btn.dataset.page] || "/"));
+});
+
+// Kept for any old onclick="goToHomepage()"
+function goToHomepage() { navigate("/"); }
+
+// ---------------- Data ----------------
+async function getStories(lang) {
+  if (cache[lang]) return cache[lang];
+  const res = await fetch("/api/news");
+  if (!res.ok) throw new Error("API error " + res.status);
+  const data = await res.json();
+  const all = data.news || [];
+  cache.urdu = all.filter((a) => a.language === "urdu");
+  cache.english = all.filter((a) => a.language === "english");
+  return cache[lang];
+}
+
+function displayDate(article) {
+  if (!article.date) return article.language === "urdu" ? "آج" : "Today";
+  const d = new Date(article.date);
+  if (isNaN(d)) return article.date;
+  return d.toLocaleDateString(article.language === "urdu" ? "ur-PK" : "en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+// ---------------- News list pages ----------------
+async function loadNews(lang) {
+  const cfg = LANG[lang];
+  const featuredSlot = document.getElementById(cfg.featured);
+  if (!cache[lang]) featuredSlot.innerHTML = `<p class="${lang === "urdu" ? "urdu " : ""}loading-msg">${cfg.t.loading}</p>`;
   try {
-    // First try to load from backend
-    const backendResponse = await fetch('/api/news');
-    const backendData = await backendResponse.json();
-    
-    let urduNewsFromDB = [];
-    if (backendData.news) {
-      urduNewsFromDB = backendData.news.filter(article => article.language === 'urdu').map(article => ({
-        title: article.title,
-        description: article.excerpt,
-        image: article.image || null,
-        url: article.sourceUrl,
-        date: article.date || 'آج',
-        category: article.category || 'general',
-        id: article.id
-      }));
-    }
-    
-    // If we have news from database, use them
-    if (urduNewsFromDB.length > 0) {
-      allUrduNews = urduNewsFromDB;
-      urduNewsLoaded = true;
-      renderUrduNews();
-      return;
-    }
-    
-    // Otherwise, try to fetch from NewsData API
-    const NEWS_API_KEY = 'pub_1c5a4177a02048799b7b000174be3cb3';
-    const apiResponse = await fetch(`https://newsdata.io/api/1/latest?apikey=${NEWS_API_KEY}&country=pk&language=ur&category=top,business,technology,sports,entertainment`);
-    const apiData = await apiResponse.json();
-    
-    if (apiData.status === "success" && apiData.results) {
-      allUrduNews = apiData.results.filter(article => article.title && article.description).map(article => ({
-        title: article.title,
-        description: article.description || article.title,
-        image: article.image_url || null,
-        url: article.link,
-        date: article.pubDate ? new Date(article.pubDate).toLocaleDateString('ur-PK') : 'آج',
-        category: article.category ? (Array.isArray(article.category) ? article.category[0] : article.category) : 'general'
-      }));
-      
-      urduNewsLoaded = true;
-      renderUrduNews();
-    } else {
-      throw new Error('Failed to load news from API');
-    }
+    await getStories(lang);
+    renderNews(lang);
   } catch (err) {
-    console.error('Urdu news loading error:', err);
-    featuredSlot.innerHTML = `<p class="urdu loading-msg">خبریں لوڈ نہیں ہو سکیں۔ براہ کرم Admin Panel سے news add کریں۔</p>`;
+    console.error(lang + " news loading error:", err);
+    featuredSlot.innerHTML = `<p class="${lang === "urdu" ? "urdu " : ""}loading-msg">${cfg.t.error}</p>`;
   }
 }
 
-// --- Load English News from Backend or API ---
-async function loadEnglishNews() {
-  const featuredSlot = document.getElementById("featuredSlotEnglish");
-  const listSlot = document.getElementById("newsListEnglish");
-  
-  featuredSlot.innerHTML = `<p class="loading-msg">Loading news...</p>`;
-  
-  try {
-    // First try to load from backend
-    const backendResponse = await fetch('/api/news');
-    const backendData = await backendResponse.json();
-    
-    let englishNewsFromDB = [];
-    if (backendData.news) {
-      englishNewsFromDB = backendData.news.filter(article => article.language === 'english').map(article => ({
-        title: article.title,
-        description: article.excerpt,
-        image: article.image || null,
-        url: article.sourceUrl,
-        date: article.date ? new Date(article.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Today',
-        category: article.category || 'general',
-        id: article.id
-      }));
-    }
-    
-    // If we have news from database, use them
-    if (englishNewsFromDB.length > 0) {
-      allEnglishNews = englishNewsFromDB;
-      englishNewsLoaded = true;
-      renderEnglishNews();
-      return;
-    }
-    
-    // Otherwise, try to fetch from NewsData API
-    const NEWS_API_KEY = 'pub_1c5a4177a02048799b7b000174be3cb3';
-    const apiResponse = await fetch(`https://newsdata.io/api/1/latest?apikey=${NEWS_API_KEY}&country=pk&language=en&category=top,business,technology,sports,entertainment`);
-    const apiData = await apiResponse.json();
-    
-    if (apiData.status === "success" && apiData.results) {
-      allEnglishNews = apiData.results.filter(article => article.title && article.description).map(article => ({
-        title: article.title,
-        description: article.description || article.title,
-        image: article.image_url || null,
-        url: article.link,
-        date: article.pubDate ? new Date(article.pubDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Today',
-        category: article.category ? (Array.isArray(article.category) ? article.category[0] : article.category) : 'general'
-      }));
-      
-      englishNewsLoaded = true;
-      renderEnglishNews();
-    } else {
-      throw new Error('Failed to load news from API');
-    }
-  } catch (err) {
-    console.error('English news loading error:', err);
-    featuredSlot.innerHTML = `<p class="loading-msg">Failed to load news. Please add news from Admin Panel.</p>`;
-  }
-}
+function renderNews(lang) {
+  const cfg = LANG[lang];
+  const u = lang === "urdu" ? "urdu" : "";
+  const featuredSlot = document.getElementById(cfg.featured);
+  const listSlot = document.getElementById(cfg.list);
+  const stories = cache[lang] || [];
 
-// --- Render Urdu News ---
-function renderUrduNews() {
-  const searchInput = document.getElementById("searchInputUrdu");
-  const categoryFilter = document.getElementById("categoryFilterUrdu");
-  const featuredSlot = document.getElementById("featuredSlotUrdu");
-  const listSlot = document.getElementById("newsListUrdu");
-  
-  const query = (searchInput?.value || "").trim().toLowerCase();
-  const category = categoryFilter?.value || "";
-  
-  let filtered = allUrduNews.filter((article) => {
-    const matchesQuery = !query || 
-      article.title.toLowerCase().includes(query) || 
-      article.description.toLowerCase().includes(query);
-    const matchesCategory = !category || article.category === category;
-    return matchesQuery && matchesCategory;
-  });
-  
-  if (filtered.length === 0) {
-    featuredSlot.innerHTML = `<p class="urdu loading-msg">کوئی خبر نہیں ملی۔</p>`;
+  if (stories.length === 0) {
+    featuredSlot.innerHTML = `<p class="${u} loading-msg">${cfg.t.none}</p>`;
     listSlot.innerHTML = "";
     return;
   }
-  
-  // Featured news (first article)
-  const featured = filtered[0];
-  featuredSlot.innerHTML = `
-    <div class="featured">
-      <div class="featured-art">
-        ${featured.image ? 
-          `<img src="${escapeAttr(featured.image)}" alt="${escapeAttr(featured.title)}" onerror="this.src='/assets/logo.png'">` : 
-          `<img src="/assets/logo.png" alt="The Report">`
-        }
-      </div>
-      <div class="featured-body">
-        <span class="badge-red">نمایاں خبر</span>
-        <h2 class="urdu">${escapeHtml(featured.title)}</h2>
-        <p class="urdu">${escapeHtml(featured.description.substring(0, 200))}...</p>
-        <div class="meta-row">
-          <a href="${escapeAttr(featured.url)}" target="_blank" rel="noopener">مکمل خبر پڑھیں →</a>
-          <span>${escapeHtml(featured.date)}</span>
-        </div>
-      </div>
-    </div>
-  `;
-  
-  // Rest of the news
-  const rest = filtered.slice(1);
-  listSlot.innerHTML = rest.map((article) => `
-    <div class="news-card-modern">
-      <div class="news-image">
-        ${article.image ? 
-          `<img src="${escapeAttr(article.image)}" alt="${escapeAttr(article.title)}" onerror="this.parentElement.innerHTML='<div style=\\'width:100%;height:100%;background:linear-gradient(135deg, var(--navy-3), var(--navy));display:flex;align-items:center;justify-content:center;\\'><img src=\\'/assets/logo.png\\' style=\\'width:60px;height:60px;\\'></div>'">` : 
-          `<div style="width:100%;height:100%;background:linear-gradient(135deg, var(--navy-3), var(--navy));display:flex;align-items:center;justify-content:center;"><img src="/assets/logo.png" style="width:60px;height:60px;"></div>`
-        }
-        <span class="news-category-badge">${getCategoryUrdu(article.category)}</span>
-      </div>
-      <div class="news-content">
-        <h3 class="urdu">${escapeHtml(article.title)}</h3>
-        <p class="urdu">${escapeHtml(article.description.substring(0, 150))}...</p>
-        <div class="news-meta">
-          <span class="news-date">${escapeHtml(article.date)}</span>
-          <a href="${escapeAttr(article.url)}" class="news-read-more" target="_blank" rel="noopener">مزید پڑھیں →</a>
-        </div>
-      </div>
-    </div>
-  `).join("");
-}
 
-// --- Render English News ---
-function renderEnglishNews() {
-  const searchInput = document.getElementById("searchInputEnglish");
-  const categoryFilter = document.getElementById("categoryFilterEnglish");
-  const featuredSlot = document.getElementById("featuredSlotEnglish");
-  const listSlot = document.getElementById("newsListEnglish");
-  
-  const query = (searchInput?.value || "").trim().toLowerCase();
-  const category = categoryFilter?.value || "";
-  
-  let filtered = allEnglishNews.filter((article) => {
-    const matchesQuery = !query || 
-      article.title.toLowerCase().includes(query) || 
-      article.description.toLowerCase().includes(query);
-    const matchesCategory = !category || article.category === category;
-    return matchesQuery && matchesCategory;
+  const query = (document.getElementById(cfg.search)?.value || "").trim().toLowerCase();
+  const category = document.getElementById(cfg.filter)?.value || "";
+  const filtered = stories.filter((a) => {
+    const text = `${a.title} ${a.excerpt || ""}`.toLowerCase();
+    return (!query || text.includes(query)) && (!category || a.category === category);
   });
-  
+
   if (filtered.length === 0) {
-    featuredSlot.innerHTML = `<p class="loading-msg">No news found.</p>`;
+    featuredSlot.innerHTML = `<p class="${u} loading-msg">${cfg.t.noMatch}</p>`;
     listSlot.innerHTML = "";
     return;
   }
-  
-  // Featured news (first article)
-  const featured = filtered[0];
+
+  const [featured, ...rest] = filtered;
+  const link = (a) => `/news/${encodeURIComponent(a.id)}`;
+
   featuredSlot.innerHTML = `
-    <div class="featured">
-      <div class="featured-art">
-        ${featured.image ? 
-          `<img src="${escapeAttr(featured.image)}" alt="${escapeAttr(featured.title)}" onerror="this.src='/assets/logo.png'">` : 
-          `<img src="/assets/logo.png" alt="The Report">`
-        }
-      </div>
+    <div class="featured clickable" data-nav="${escapeAttr(link(featured))}">
+      <div class="featured-art">${mediaHtml(featured, false)}</div>
       <div class="featured-body">
-        <span class="badge-red">FEATURED NEWS</span>
-        <h2>${escapeHtml(featured.title)}</h2>
-        <p>${escapeHtml(featured.description.substring(0, 200))}...</p>
+        <span class="badge-red">${cfg.t.badge}</span>
+        <h2 class="${u}">${escapeHtml(featured.title)}</h2>
+        <p class="${u}">${escapeHtml(shorten(featured.excerpt, 220))}</p>
         <div class="meta-row">
-          <a href="${escapeAttr(featured.url)}" target="_blank" rel="noopener">Read Full Story →</a>
-          <span>${escapeHtml(featured.date)}</span>
+          <a href="${escapeAttr(link(featured))}" data-nav="${escapeAttr(link(featured))}">${cfg.t.readFull}</a>
+          <span>${escapeHtml(displayDate(featured))}</span>
         </div>
       </div>
-    </div>
-  `;
-  
-  // Rest of the news
-  const rest = filtered.slice(1);
-  listSlot.innerHTML = rest.map((article) => `
-    <div class="news-card-modern">
+    </div>`;
+
+  listSlot.innerHTML = rest.map((a) => `
+    <div class="news-card-modern clickable" data-nav="${escapeAttr(link(a))}">
       <div class="news-image">
-        ${article.image ? 
-          `<img src="${escapeAttr(article.image)}" alt="${escapeAttr(article.title)}" onerror="this.parentElement.innerHTML='<div style=\\'width:100%;height:100%;background:linear-gradient(135deg, var(--navy-3), var(--navy));display:flex;align-items:center;justify-content:center;\\'><img src=\\'/assets/logo.png\\' style=\\'width:60px;height:60px;\\'></div>'">` : 
-          `<div style="width:100%;height:100%;background:linear-gradient(135deg, var(--navy-3), var(--navy));display:flex;align-items:center;justify-content:center;"><img src="/assets/logo.png" style="width:60px;height:60px;"></div>`
-        }
-        <span class="news-category-badge">${escapeHtml(article.category)}</span>
+        ${imageHtml(a)}
+        <span class="news-category-badge">${escapeHtml(lang === "urdu" ? getCategoryUrdu(a.category) : a.category || "general")}</span>
+        ${a.video ? `<span class="news-video-badge">▶</span>` : ""}
       </div>
       <div class="news-content">
-        <h3>${escapeHtml(article.title)}</h3>
-        <p>${escapeHtml(article.description.substring(0, 150))}...</p>
+        <h3 class="${u}">${escapeHtml(a.title)}</h3>
+        <p class="${u}">${escapeHtml(shorten(a.excerpt, 150))}</p>
         <div class="news-meta">
-          <span class="news-date">${escapeHtml(article.date)}</span>
-          <a href="${escapeAttr(article.url)}" class="news-read-more" target="_blank" rel="noopener">Read More →</a>
+          <span class="news-date">${escapeHtml(displayDate(a))}</span>
+          <a href="${escapeAttr(link(a))}" data-nav="${escapeAttr(link(a))}" class="news-read-more">${cfg.t.readMore}</a>
         </div>
       </div>
-    </div>
-  `).join("");
+    </div>`).join("");
 }
 
-// --- Category Translation ---
+// ---------------- Single story page (on our site) ----------------
+let articleBackPath = "/";
+
+async function loadArticle(id) {
+  const slot = document.getElementById("articleSlot");
+  const backBtn = document.getElementById("articleBackBtn");
+  slot.innerHTML = `<p class="loading-msg">Loading… / لوڈ ہو رہا ہے…</p>`;
+
+  try {
+    // Use the already-loaded list if we have it, otherwise ask the API for this one story.
+    let a = [...(cache.urdu || []), ...(cache.english || [])].find((x) => x.id === id);
+    if (!a) {
+      const res = await fetch("/api/news/" + encodeURIComponent(id));
+      if (res.status === 404) throw Object.assign(new Error("not found"), { notFound: true });
+      if (!res.ok) throw new Error("API error " + res.status);
+      a = await res.json();
+    }
+
+    const cfg = LANG[a.language] || LANG.english;
+    const u = a.language === "urdu" ? "urdu" : "";
+    articleBackPath = cfg.path;
+    backBtn.textContent = cfg.t.back;
+    document.title = `${a.title} — THE REPORT`;
+
+    const paragraphs = String(a.body || a.excerpt || "")
+      .split(/\n\s*\n|\n/)
+      .map((p) => p.trim())
+      .filter(Boolean)
+      .map((p) => `<p class="${u}">${escapeHtml(p)}</p>`)
+      .join("");
+
+    const source = safeUrl(a.sourceUrl)
+      ? `<div class="article-source ${u}">${cfg.t.source}: <a href="${escapeAttr(safeUrl(a.sourceUrl))}" target="_blank" rel="noopener nofollow">${escapeHtml(a.sourceName || hostOf(a.sourceUrl))}</a></div>`
+      : "";
+
+    slot.innerHTML = `
+      <article class="article" ${cfg.rtl ? 'dir="rtl"' : ""}>
+        <div class="article-meta">
+          <span class="badge-red">${escapeHtml(a.language === "urdu" ? getCategoryUrdu(a.category) : (a.category || "general").toUpperCase())}</span>
+          <span>${escapeHtml(displayDate(a))}</span>
+        </div>
+        <h1 class="article-title ${u}">${escapeHtml(a.title)}</h1>
+        <div class="article-media">${mediaHtml(a, true)}</div>
+        <div class="article-body">${paragraphs}</div>
+        ${source}
+      </article>`;
+  } catch (err) {
+    console.error("Article loading error:", err);
+    slot.innerHTML = `<p class="loading-msg">${err.notFound ? LANG.english.t.notFound + "<br><span class='urdu'>" + LANG.urdu.t.notFound + "</span>" : "Could not load this story."}</p>`;
+  }
+}
+
+document.getElementById("articleBackBtn")?.addEventListener("click", () => navigate(articleBackPath));
+
+// ---------------- Small helpers ----------------
+function imageHtml(a) {
+  const src = safeUrl(a.image);
+  return src
+    ? `<img src="${escapeAttr(src)}" alt="${escapeAttr(a.title)}" loading="lazy" onerror="this.onerror=null;this.src='/assets/logo.png';this.classList.add('img-fallback')">`
+    : `<div class="img-placeholder"><img src="/assets/logo.png" alt=""></div>`;
+}
+
+// On the story page the video plays inline; on cards we only show the picture.
+function mediaHtml(a, withVideo) {
+  const video = safeUrl(a.video);
+  if (withVideo && video) {
+    const poster = safeUrl(a.image);
+    return `<video controls preload="metadata" playsinline ${poster ? `poster="${escapeAttr(poster)}"` : ""} src="${escapeAttr(video)}"></video>`;
+  }
+  return imageHtml(a);
+}
+
+function shorten(str, n) {
+  const s = String(str || "");
+  return s.length > n ? s.slice(0, n).trim() + "…" : s;
+}
+
+function hostOf(url) {
+  try { return new URL(url).hostname.replace(/^www\./, ""); } catch { return "link"; }
+}
+
+// Only allow http(s), our own /paths and uploaded data:image — blocks "javascript:" links.
+function safeUrl(url) {
+  if (!url || typeof url !== "string") return "";
+  const u = url.trim();
+  if (/^https?:\/\//i.test(u) || u.startsWith("/") || /^data:image\//i.test(u)) return u;
+  return "";
+}
+
 function getCategoryUrdu(category) {
   const categoryMap = {
-    'general': 'عام',
-    'business': 'کاروبار',
-    'technology': 'ٹیکنالوجی',
-    'entertainment': 'تفریح',
-    'sports': 'کھیل',
-    'science': 'سائنس',
-    'health': 'صحت',
-    'top': 'اہم خبریں'
+    general: "عام", business: "کاروبار", technology: "ٹیکنالوجی", entertainment: "تفریح",
+    sports: "کھیل", science: "سائنس", health: "صحت", top: "اہم خبریں",
   };
-  return categoryMap[category] || 'خبریں';
+  return categoryMap[category] || "خبریں";
 }
 
-// --- Helper functions ---
 function escapeHtml(str) {
-  const div = document.createElement("div");
-  div.textContent = str ?? "";
-  return div.innerHTML;
+  return String(str ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
+const escapeAttr = escapeHtml;
 
-function escapeAttr(str) {
-  return (str ?? "").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-}
-
-// --- Event listeners for search and filter ---
-document.getElementById("searchInputUrdu")?.addEventListener("input", () => {
-  if (urduNewsLoaded) renderUrduNews();
+// Search + category filter
+["urdu", "english"].forEach((lang) => {
+  document.getElementById(LANG[lang].search)?.addEventListener("input", () => cache[lang] && renderNews(lang));
+  document.getElementById(LANG[lang].filter)?.addEventListener("change", () => cache[lang] && renderNews(lang));
 });
 
-document.getElementById("categoryFilterUrdu")?.addEventListener("change", () => {
-  if (urduNewsLoaded) renderUrduNews();
-});
-
-document.getElementById("searchInputEnglish")?.addEventListener("input", () => {
-  if (englishNewsLoaded) renderEnglishNews();
-});
-
-document.getElementById("categoryFilterEnglish")?.addEventListener("change", () => {
-  if (englishNewsLoaded) renderEnglishNews();
-});
-
-// --- Handle direct hash navigation (removed - now homepage first) ---
+// Open the right page for the current URL (e.g. someone opens a shared /news/<id> link)
+route();
 
 // --- Contact Form WhatsApp Integration ---
 const contactForm = document.getElementById("contactForm");

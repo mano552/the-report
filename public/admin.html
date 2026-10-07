@@ -363,6 +363,7 @@
     border-radius: 12px;
     margin-bottom: 12px;
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 16px;
     background: rgba(10, 37, 87, 0.03);
@@ -371,7 +372,6 @@
   
   .news-row:hover {
     background: rgba(10, 37, 87, 0.08);
-    transform: translateX(4px);
   }
   
   .news-row img {
@@ -422,8 +422,12 @@
   
   .news-actions {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
   }
+  .news-actions a.secondary { font-size: 0.8rem; background: #e9edf5; color: #0A2557; }
+  .news-meta { flex-wrap: wrap; }
+  .edit-slot:empty { display: none; }
   
   .news-actions button {
     margin: 0;
@@ -475,6 +479,16 @@
       grid-template-columns: 1fr;
     }
   }
+  .edit-box { width:100%; margin-top:12px; padding:14px; background:rgba(10,37,87,0.05); border-radius:12px; display:grid; gap:10px; }
+  .edit-box label { font-size:0.8rem; font-weight:700; color:#0A2557; }
+  .edit-box input, .edit-box textarea, .edit-box select { width:100%; padding:10px; border:1px solid #ccd3e3; border-radius:8px; font:inherit; color:#0A1B3D; }
+  .edit-box textarea { min-height:90px; }
+  .edit-box textarea.big { min-height:200px; }
+  .agent-box { padding:12px 14px; border-radius:10px; font-size:0.88rem; line-height:1.6; }
+  .agent-box.run { background:#e7f0ff; color:#0A2557; }
+  .agent-box.ok { background:#d4edda; color:#155724; }
+  .agent-box.err { background:#f8d7da; color:#721c24; }
+  .agent-box ul { margin:6px 0 0 18px; }
 </style>
 </head>
 <body>
@@ -562,6 +576,11 @@
     </div>
 
     <div class="form-group full">
+      <label>Full Story (optional — shown on the story page; blank = description is used)</label>
+      <textarea id="body" rows="8" placeholder="Write the full news story. Leave an empty line between paragraphs."></textarea>
+    </div>
+
+    <div class="form-group full">
       <label>Source URL (optional)</label>
       <input type="url" id="sourceUrl" placeholder="https://example.com/news-article">
     </div>
@@ -605,6 +624,11 @@
     <div class="card-header">
       <div class="card-icon">📋</div>
       <h2>All News Stories</h2>
+    </div>
+    <div style="margin-bottom:16px">
+      <button type="button" id="runAgentBtn">🤖 Run AI agent now</button>
+      <div id="agentStatus" style="margin-top:12px"></div>
+      <span style="font-size:0.85rem;color:#5B6786;margin-left:8px">Fetches fresh Urdu + English news, rewrites them with Gemini and saves them as drafts. Enter the admin key at the top first.</span>
     </div>
     <div class="form-grid" style="margin-bottom: 20px;">
       <div class="form-group">
@@ -660,7 +684,9 @@
     if (languageSelect.value === 'urdu') {
       titleInput.classList.add('urdu-input');
       excerptInput.classList.add('urdu-input');
+      document.getElementById('body').classList.add('urdu-input');
     } else {
+      document.getElementById('body').classList.remove('urdu-input');
       titleInput.classList.remove('urdu-input');
       excerptInput.classList.remove('urdu-input');
     }
@@ -699,8 +725,10 @@
     };
   }
 
+  const escHtml = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
   function showStatus(element, message, type) {
-    element.innerHTML = `<div class="status-msg ${type}">${message}</div>`;
+    element.innerHTML = `<div class="status-msg ${type}">${escHtml(message)}</div>`;
     setTimeout(() => {
       element.innerHTML = '';
     }, 5000);
@@ -708,8 +736,9 @@
 
   async function refreshList() {
     try {
-      const res = await fetch('/api/news');
+      const res = await fetch('/api/news', { headers: headers() });
       const data = await res.json();
+      window.__allNews = data.news || [];
       
       let allNews = data.news || [];
       
@@ -738,22 +767,54 @@
         return;
       }
 
+      const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
       newsListEl.innerHTML = allNews.map(n => `
         <div class="news-row">
-          ${n.image ? `<img src="${n.image}" alt="" onerror="this.style.display='none'">` : '<div style="width:80px;height:80px;background:linear-gradient(135deg, #0A2557, #123166);border-radius:12px;"></div>'}
+          ${n.image ? `<img src="${esc(n.image)}" alt="" onerror="this.style.display='none'">` : '<div style="width:80px;height:80px;background:linear-gradient(135deg, #0A2557, #123166);border-radius:12px;"></div>'}
           <div class="news-info">
-            <div class="news-title ${n.language === 'urdu' ? 'urdu' : ''}">${n.title}</div>
+            <div class="news-title ${n.language === 'urdu' ? 'urdu' : ''}">${esc(n.title)}</div>
+            <div class="${n.language === 'urdu' ? 'urdu' : ''}" style="font-size:0.85rem;color:#5B6786;margin:4px 0">${esc((n.excerpt || '').slice(0, 160))}</div>
             <div class="news-meta">
-              <span class="badge ${n.language}">${n.language.toUpperCase()}</span>
-              <span>📁 ${n.category}</span>
-              <span>📅 ${n.date || 'N/A'}</span>
+              <span class="badge ${esc(n.language)}">${esc((n.language || '').toUpperCase())}</span>
+              <span>📁 ${esc(n.category)}</span>
+              <span>📅 ${esc(n.date || 'N/A')}</span>
+              ${n.status === 'draft' ? '<span style="background:#fff3cd;color:#856404;padding:2px 8px;border-radius:8px;font-weight:700">📝 DRAFT</span>' : ''}
+              ${n.video ? '<span>🎬 video</span>' : ''}
+              ${n.sourceUrl ? `<a href="${esc(n.sourceUrl)}" target="_blank" rel="noopener">🔗 source</a>` : ''}
             </div>
           </div>
           <div class="news-actions">
-            <button data-id="${n.id}" class="del danger">🗑️ Delete</button>
+            ${n.status === 'draft' ? `<button data-id="${esc(n.id)}" class="pub">✅ Publish</button>` : `<button data-id="${esc(n.id)}" class="unpub secondary">↩️ Unpublish</button><a href="/news/${encodeURIComponent(n.id)}" target="_blank" class="secondary" style="text-align:center;text-decoration:none;padding:8px 12px;border-radius:10px;font-weight:700">👁️ View</a>`}
+            <button data-id="${esc(n.id)}" class="edit secondary">✏️ Edit</button>
+            <button data-id="${esc(n.id)}" class="del danger">🗑️ Delete</button>
           </div>
+          <div class="edit-slot" id="edit-${esc(n.id)}" style="flex-basis:100%"></div>
         </div>
       `).join('');
+
+      document.querySelectorAll('.pub').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const res = await fetch('/api/news/' + btn.dataset.id, {
+            method: 'PUT', headers: headers(), body: JSON.stringify({ status: 'published' })
+          });
+          if (res.ok) { showStatus(addStatusEl, '✅ Published! It is now live on the website.', 'success'); refreshList(); }
+          else showStatus(addStatusEl, '❌ Could not publish (check the admin key at the top).', 'error');
+        });
+      });
+
+      document.querySelectorAll('.unpub').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const res = await fetch('/api/news/' + btn.dataset.id, {
+            method: 'PUT', headers: headers(), body: JSON.stringify({ status: 'draft' })
+          });
+          if (res.ok) { showStatus(addStatusEl, '↩️ Moved back to drafts (hidden from the website).', 'success'); refreshList(); }
+          else showStatus(addStatusEl, '❌ Could not update (check the admin key at the top).', 'error');
+        });
+      });
+
+      document.querySelectorAll('.edit').forEach(btn => {
+        btn.addEventListener('click', () => openEditor(btn.dataset.id));
+      });
 
       document.querySelectorAll('.del').forEach(btn => {
         btn.addEventListener('click', async () => {
@@ -779,12 +840,112 @@
     }
   }
 
+  // ---------- Edit a story (fix AI mistakes before publishing) ----------
+  function openEditor(id) {
+    const n = (window.__allNews || []).find(x => x.id === id);
+    const slot = document.getElementById('edit-' + id);
+    if (!n || !slot) return;
+    if (slot.innerHTML) { slot.innerHTML = ''; return; } // toggle
+    const u = n.language === 'urdu' ? 'urdu' : '';
+    const dir = n.language === 'urdu' ? 'dir="rtl"' : '';
+    const cats = ['general','business','technology','entertainment','sports','health','science'];
+    slot.innerHTML = `
+      <div class="edit-box">
+        <label>Title</label><input class="e-title ${u}" ${dir} value="${escHtml(n.title)}">
+        <label>Description (card)</label><textarea class="e-excerpt ${u}" ${dir}>${escHtml(n.excerpt)}</textarea>
+        <label>Full story (story page — empty line between paragraphs)</label><textarea class="e-body big ${u}" ${dir}>${escHtml(n.body || n.excerpt)}</textarea>
+        <label>Category</label><select class="e-cat">${cats.map(c => `<option ${c === n.category ? 'selected' : ''}>${c}</option>`).join('')}</select>
+        <label>Image URL</label><input class="e-image" value="${escHtml(n.image && !String(n.image).startsWith('data:') ? n.image : '')}" placeholder="${n.image && String(n.image).startsWith('data:') ? '(uploaded image — leave empty to keep it)' : 'https://…'}">
+        <div><button class="e-save">💾 Save</button> ${n.status === 'draft' ? '<button class="e-save-pub">✅ Save & Publish</button>' : ''} <button class="e-cancel secondary">Cancel</button></div>
+      </div>`;
+    const save = async (publish) => {
+      const upd = {
+        title: slot.querySelector('.e-title').value.trim(),
+        excerpt: slot.querySelector('.e-excerpt').value.trim(),
+        body: slot.querySelector('.e-body').value.trim(),
+        category: slot.querySelector('.e-cat').value,
+      };
+      const img = slot.querySelector('.e-image').value.trim();
+      if (img) upd.image = img;
+      if (publish) upd.status = 'published';
+      if (!upd.title || !upd.excerpt) return showStatus(addStatusEl, '❌ Title and description are required', 'error');
+      const res = await fetch('/api/news/' + id, { method: 'PUT', headers: headers(), body: JSON.stringify(upd) });
+      if (res.ok) { showStatus(addStatusEl, publish ? '✅ Saved and published!' : '💾 Saved.', 'success'); refreshList(); }
+      else showStatus(addStatusEl, '❌ Could not save (check the admin key at the top).', 'error');
+    };
+    slot.querySelector('.e-save').onclick = () => save(false);
+    slot.querySelector('.e-save-pub')?.addEventListener('click', () => save(true));
+    slot.querySelector('.e-cancel').onclick = () => { slot.innerHTML = ''; };
+  }
+
+  // ---------- AI agent: start in background, then poll its status ----------
+  const runBtn = document.getElementById('runAgentBtn');
+  const agentStatusEl = document.getElementById('agentStatus');
+  let pollTimer = null;
+
+  const logHtml = (log) => log && log.length
+    ? `<details style="margin-top:8px" ${window.__logOpen ? 'open' : ''} ontoggle="window.__logOpen=this.open"><summary style="cursor:pointer;font-weight:700">Step-by-step log</summary><pre style="white-space:pre-wrap;font-size:0.78rem;margin-top:6px;max-height:260px;overflow:auto">${escHtml(log.join('\n'))}</pre></details>`
+    : '';
+
+  function renderAgent(st) {
+    if (!st) return;
+    const list = (arr) => arr && arr.length ? `<ul>${arr.map(x => `<li>${escHtml(x)}</li>`).join('')}</ul>` : '';
+    if (st.running) {
+      const secs = Math.round((Date.now() - new Date(st.startedAt)) / 1000);
+      agentStatusEl.innerHTML = `<div class="agent-box run">⏳ Agent is working… (${secs}s)<br><b>Now:</b> ${escHtml(st.progress)}${logHtml(st.log)}</div>`;
+      return;
+    }
+    if (st.ok === null) { agentStatusEl.innerHTML = ''; return; }
+    const when = st.finishedAt ? new Date(st.finishedAt).toLocaleString() : '';
+    agentStatusEl.innerHTML = st.ok
+      ? `<div class="agent-box ok">🤖 ${escHtml(st.message)} <small>(${escHtml(when)}, ${escHtml(st.trigger)})</small>${list(st.addedTitles)}
+           ${st.notes.length ? '<div style="margin-top:6px">ℹ️ Notes:</div>' + list(st.notes) : ''}
+           ${st.errors.length ? '<div style="margin-top:6px;color:#856404">⚠️ Some stories were skipped:</div>' + list(st.errors) : ''}${logHtml(st.log)}</div>`
+      : `<div class="agent-box err">❌ ${escHtml(st.message)} <small>(${escHtml(when)})</small>${list(st.errors)}${logHtml(st.log)}</div>`;
+  }
+
+  async function pollAgent() {
+    clearTimeout(pollTimer);
+    try {
+      const res = await fetch('/api/news/fetch/status', { headers: headers() });
+      if (!res.ok) return; // wrong/missing key — nothing to show
+      const st = await res.json();
+      renderAgent(st);
+      if (st.running) {
+        runBtn.disabled = true; runBtn.textContent = '⏳ Agent is working...';
+        pollTimer = setTimeout(pollAgent, 3000);
+      } else {
+        if (runBtn.disabled) refreshList(); // just finished → show the new drafts
+        runBtn.disabled = false; runBtn.textContent = '🤖 Run AI agent now';
+      }
+    } catch (e) {
+      pollTimer = setTimeout(pollAgent, 5000); // network hiccup, try again
+    }
+  }
+
+  if (runBtn) runBtn.addEventListener('click', async () => {
+    if (!keyInput.value) return showStatus(addStatusEl, '❌ Enter the admin key at the top first.', 'error');
+    runBtn.disabled = true; runBtn.textContent = '⏳ Starting...';
+    try {
+      const res = await fetch('/api/news/fetch/run', { method: 'POST', headers: headers() });
+      let data = {};
+      try { data = await res.json(); } catch { throw new Error('Server returned ' + res.status + ' (not JSON). Is the Node app running?'); }
+      if (res.status === 401) throw new Error('Wrong admin key.');
+      if (!res.ok && res.status !== 409) throw new Error(data.error || ('Failed (' + res.status + ')'));
+      pollAgent();
+    } catch (err) {
+      showStatus(addStatusEl, '❌ ' + err.message, 'error');
+      runBtn.disabled = false; runBtn.textContent = '🤖 Run AI agent now';
+    }
+  });
+
   document.getElementById('filterLang').addEventListener('change', refreshList);
   document.getElementById('filterCategory').addEventListener('change', refreshList);
 
   document.getElementById('addBtn').addEventListener('click', async () => {
     const title = document.getElementById('title').value.trim();
     const excerpt = document.getElementById('excerpt').value.trim();
+    const storyBody = document.getElementById('body').value.trim();
     const category = document.getElementById('category').value;
     const language = document.getElementById('language').value;
     const sourceUrl = document.getElementById('sourceUrl').value.trim();
@@ -818,6 +979,7 @@
     const body = {
       title,
       excerpt,
+      body: storyBody || excerpt,
       category,
       language,
       sourceUrl: sourceUrl || null,
@@ -848,6 +1010,7 @@
   document.getElementById('resetBtn').addEventListener('click', () => {
     document.getElementById('title').value = '';
     document.getElementById('excerpt').value = '';
+    document.getElementById('body').value = '';
     document.getElementById('category').value = 'general';
     document.getElementById('language').value = 'urdu';
     document.getElementById('sourceUrl').value = '';
@@ -860,7 +1023,13 @@
     excerptInput.classList.add('urdu-input');
   });
 
-  // Initial load
+  // Initial load (+ reload once the admin key is typed, so drafts appear)
+  // Reload once the key is typed (only when it actually changed, so clicking
+  // elsewhere doesn't re-render the list and close an open editor).
+  let lastKey = keyInput.value;
+  const onKey = () => { if (keyInput.value === lastKey) return; lastKey = keyInput.value; refreshList(); pollAgent(); };
+  keyInput.addEventListener('change', onKey);
+  keyInput.addEventListener('input', () => { clearTimeout(window.__kt); window.__kt = setTimeout(onKey, 600); });
   refreshList();
 </script>
 </body>
