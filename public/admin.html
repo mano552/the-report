@@ -531,8 +531,7 @@
     </div>
     <div class="form-group full">
       <label>Admin Key <span class="required">*</span></label>
-      <input type="password" id="adminKey" placeholder="Enter your admin key from .env file">
-      <p style="color:#5B6786; font-size:0.82rem; margin-top: 8px;">Your admin key is stored in memory only and never saved.</p>
+      <input type="password" id="adminKey">
     </div>
   </div>
 
@@ -628,7 +627,6 @@
     <div style="margin-bottom:16px">
       <button type="button" id="runAgentBtn">🤖 Run AI agent now</button>
       <div id="agentStatus" style="margin-top:12px"></div>
-      <span style="font-size:0.85rem;color:#5B6786;margin-left:8px">Fetches fresh Urdu + English news, rewrites them with Gemini and saves them as drafts. Enter the admin key at the top first.</span>
     </div>
     <div class="form-grid" style="margin-bottom: 20px;">
       <div class="form-group">
@@ -883,16 +881,12 @@
   const agentStatusEl = document.getElementById('agentStatus');
   let pollTimer = null;
 
-  const logHtml = (log) => log && log.length
-    ? `<details style="margin-top:8px" ${window.__logOpen ? 'open' : ''} ontoggle="window.__logOpen=this.open"><summary style="cursor:pointer;font-weight:700">Step-by-step log</summary><pre style="white-space:pre-wrap;font-size:0.78rem;margin-top:6px;max-height:260px;overflow:auto">${escHtml(log.join('\n'))}</pre></details>`
-    : '';
-
   function renderAgent(st) {
     if (!st) return;
     const list = (arr) => arr && arr.length ? `<ul>${arr.map(x => `<li>${escHtml(x)}</li>`).join('')}</ul>` : '';
     if (st.running) {
       const secs = Math.round((Date.now() - new Date(st.startedAt)) / 1000);
-      agentStatusEl.innerHTML = `<div class="agent-box run">⏳ Agent is working… (${secs}s)<br><b>Now:</b> ${escHtml(st.progress)}${logHtml(st.log)}</div>`;
+      agentStatusEl.innerHTML = `<div class="agent-box run">⏳ Agent is working… (${secs}s)</div>`;
       return;
     }
     if (st.ok === null) { agentStatusEl.innerHTML = ''; return; }
@@ -900,8 +894,8 @@
     agentStatusEl.innerHTML = st.ok
       ? `<div class="agent-box ok">🤖 ${escHtml(st.message)} <small>(${escHtml(when)}, ${escHtml(st.trigger)})</small>${list(st.addedTitles)}
            ${st.notes.length ? '<div style="margin-top:6px">ℹ️ Notes:</div>' + list(st.notes) : ''}
-           ${st.errors.length ? '<div style="margin-top:6px;color:#856404">⚠️ Some stories were skipped:</div>' + list(st.errors) : ''}${logHtml(st.log)}</div>`
-      : `<div class="agent-box err">❌ ${escHtml(st.message)} <small>(${escHtml(when)})</small>${list(st.errors)}${logHtml(st.log)}</div>`;
+           ${st.errors.length ? '<div style="margin-top:6px;color:#856404">⚠️ Some stories were skipped:</div>' + list(st.errors) : ''}</div>`
+      : `<div class="agent-box err">❌ ${escHtml(st.message)} <small>(${escHtml(when)})</small>${list(st.errors)}</div>`;
   }
 
   async function pollAgent() {

@@ -204,10 +204,6 @@ async function loadArticle(id) {
       .map((p) => `<p class="${u}">${escapeHtml(p)}</p>`)
       .join("");
 
-    const source = safeUrl(a.sourceUrl)
-      ? `<div class="article-source ${u}">${cfg.t.source}: <a href="${escapeAttr(safeUrl(a.sourceUrl))}" target="_blank" rel="noopener nofollow">${escapeHtml(a.sourceName || hostOf(a.sourceUrl))}</a></div>`
-      : "";
-
     slot.innerHTML = `
       <article class="article" ${cfg.rtl ? 'dir="rtl"' : ""}>
         <div class="article-meta">
@@ -217,7 +213,6 @@ async function loadArticle(id) {
         <h1 class="article-title ${u}">${escapeHtml(a.title)}</h1>
         <div class="article-media">${mediaHtml(a, true)}</div>
         <div class="article-body">${paragraphs}</div>
-        ${source}
       </article>`;
   } catch (err) {
     console.error("Article loading error:", err);
