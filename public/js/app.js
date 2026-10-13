@@ -1,12 +1,19 @@
 // =====================================================================
-// THE REPORT — front-end
-// Pages: /  (home) · /english · /urdu · /services · /news/<id> (one story)
-// Stories now open ON OUR SITE (/news/<id>). The original source is only
-// credited with a small link at the bottom of the story page.
+// THE REPORT — front-end (Updated with all new features)
+// Pages: / (home) · /english · /urdu · /services · /news/<id>
+//        /investigator · /report-family · /live · /zarvity
 // =====================================================================
 
-const PAGE_FOR_PATH = { "/": "homepage", "/english": "news-english", "/urdu": "news-urdu", "/services": "services" };
-const PATH_FOR_PAGE = { homepage: "/", "news-english": "/english", "news-urdu": "/urdu", services: "/services" };
+const PAGE_FOR_PATH = {
+  "/": "homepage", "/english": "news-english", "/urdu": "news-urdu",
+  "/services": "services", "/investigator": "investigator",
+  "/report-family": "report-family", "/live": "live", "/zarvity": "zarvity"
+};
+const PATH_FOR_PAGE = {
+  homepage: "/", "news-english": "/english", "news-urdu": "/urdu",
+  services: "/services", investigator: "/investigator",
+  "report-family": "/report-family", live: "/live", zarvity: "/zarvity"
+};
 
 const LANG = {
   urdu: {
@@ -31,13 +38,16 @@ const LANG = {
   },
 };
 
-const cache = { urdu: null, english: null }; // stories per language, once loaded
+const cache = { urdu: null, english: null };
 
-// ---------------- Router ----------------
+// ================ Router ================
 function showPage(id) {
   document.querySelectorAll(".page").forEach((p) => p.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
+  const el = document.getElementById(id);
+  if (el) el.classList.add("active");
   window.scrollTo({ top: 0, behavior: "smooth" });
+  // Close mobile menu if open
+  document.getElementById("mobileMenu")?.classList.remove("open");
 }
 
 function navigate(path, replace = false) {
@@ -62,11 +72,11 @@ function route() {
 
 window.addEventListener("popstate", route);
 
-// Any element with data-nav="/path" (buttons, cards, links) navigates inside the site.
+// Any element with data-nav="/path" navigates inside the site.
 document.addEventListener("click", (e) => {
   const el = e.target.closest("[data-nav]");
   if (!el) return;
-  if (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1) return; // let "open in new tab" work on links
+  if (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1) return;
   e.preventDefault();
   navigate(el.dataset.nav);
 });
@@ -76,10 +86,37 @@ document.querySelectorAll(".homepage-btn").forEach((btn) => {
   btn.addEventListener("click", () => navigate(PATH_FOR_PAGE[btn.dataset.page] || "/"));
 });
 
-// Kept for any old onclick="goToHomepage()"
 function goToHomepage() { navigate("/"); }
 
-// ---------------- Data ----------------
+// ================ Mobile Menu ================
+document.getElementById("mobileMenuBtn")?.addEventListener("click", () => {
+  document.getElementById("mobileMenu")?.classList.add("open");
+});
+document.getElementById("mobileMenuClose")?.addEventListener("click", () => {
+  document.getElementById("mobileMenu")?.classList.remove("open");
+});
+
+// ================ Category Icon Buttons ================
+document.querySelectorAll(".cat-icon-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const lang = btn.dataset.lang;
+    const cat = btn.dataset.cat;
+    // Update active state
+    btn.closest(".category-icons-strip").querySelectorAll(".cat-icon-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    // Sync dropdown
+    const cfg = LANG[lang];
+    if (cfg) {
+      const filterEl = document.getElementById(cfg.filter);
+      if (filterEl) {
+        filterEl.value = cat;
+        if (cache[lang]) renderNews(lang);
+      }
+    }
+  });
+});
+
+// ================ Data ================
 async function getStories(lang) {
   if (cache[lang]) return cache[lang];
   const res = await fetch("/api/news");
@@ -98,7 +135,7 @@ function displayDate(article) {
   return d.toLocaleDateString(article.language === "urdu" ? "ur-PK" : "en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-// ---------------- News list pages ----------------
+// ================ News list pages ================
 async function loadNews(lang) {
   const cfg = LANG[lang];
   const featuredSlot = document.getElementById(cfg.featured);
@@ -173,7 +210,7 @@ function renderNews(lang) {
     </div>`).join("");
 }
 
-// ---------------- Single story page (on our site) ----------------
+// ================ Single story page ================
 let articleBackPath = "/";
 
 async function loadArticle(id) {
@@ -182,7 +219,6 @@ async function loadArticle(id) {
   slot.innerHTML = `<p class="loading-msg">Loading… / لوڈ ہو رہا ہے…</p>`;
 
   try {
-    // Use the already-loaded list if we have it, otherwise ask the API for this one story.
     let a = [...(cache.urdu || []), ...(cache.english || [])].find((x) => x.id === id);
     if (!a) {
       const res = await fetch("/api/news/" + encodeURIComponent(id));
@@ -204,6 +240,9 @@ async function loadArticle(id) {
       .map((p) => `<p class="${u}">${escapeHtml(p)}</p>`)
       .join("");
 
+    const articleUrl = encodeURIComponent(window.location.href);
+    const articleTitle = encodeURIComponent(a.title);
+
     slot.innerHTML = `
       <article class="article" ${cfg.rtl ? 'dir="rtl"' : ""}>
         <div class="article-meta">
@@ -213,6 +252,13 @@ async function loadArticle(id) {
         <h1 class="article-title ${u}">${escapeHtml(a.title)}</h1>
         <div class="article-media">${mediaHtml(a, true)}</div>
         <div class="article-body">${paragraphs}</div>
+        <div class="article-share">
+          <span><i class="fas fa-share-alt"></i> Share:</span>
+          <button class="share-btn fb" onclick="window.open('https://www.facebook.com/sharer/sharer.php?u=${articleUrl}','_blank')" title="Share on Facebook"><i class="fab fa-facebook-f"></i></button>
+          <button class="share-btn tw" onclick="window.open('https://twitter.com/intent/tweet?url=${articleUrl}&text=${articleTitle}','_blank')" title="Share on X"><i class="fab fa-x-twitter"></i></button>
+          <button class="share-btn wa" onclick="window.open('https://wa.me/?text=${articleTitle}%20${articleUrl}','_blank')" title="Share on WhatsApp"><i class="fab fa-whatsapp"></i></button>
+          <button class="share-btn copy" onclick="navigator.clipboard.writeText(window.location.href).then(()=>this.innerHTML='<i class=\\'fas fa-check\\'></i>')" title="Copy Link"><i class="fas fa-link"></i></button>
+        </div>
       </article>`;
   } catch (err) {
     console.error("Article loading error:", err);
@@ -222,7 +268,7 @@ async function loadArticle(id) {
 
 document.getElementById("articleBackBtn")?.addEventListener("click", () => navigate(articleBackPath));
 
-// ---------------- Small helpers ----------------
+// ================ Small helpers ================
 function imageHtml(a) {
   const src = safeUrl(a.image);
   return src
@@ -230,7 +276,6 @@ function imageHtml(a) {
     : `<div class="img-placeholder"><img src="/assets/logo.png" alt=""></div>`;
 }
 
-// On the story page the video plays inline; on cards we only show the picture.
 function mediaHtml(a, withVideo) {
   const video = safeUrl(a.video);
   if (withVideo && video) {
@@ -249,7 +294,6 @@ function hostOf(url) {
   try { return new URL(url).hostname.replace(/^www\./, ""); } catch { return "link"; }
 }
 
-// Only allow http(s), our own /paths and uploaded data:image — blocks "javascript:" links.
 function safeUrl(url) {
   if (!url || typeof url !== "string") return "";
   const u = url.trim();
@@ -261,6 +305,7 @@ function getCategoryUrdu(category) {
   const categoryMap = {
     general: "عام", business: "کاروبار", technology: "ٹیکنالوجی", entertainment: "تفریح",
     sports: "کھیل", science: "سائنس", health: "صحت", top: "اہم خبریں",
+    politics: "سیاست", showbiz: "شوبز",
   };
   return categoryMap[category] || "خبریں";
 }
@@ -273,10 +318,20 @@ const escapeAttr = escapeHtml;
 // Search + category filter
 ["urdu", "english"].forEach((lang) => {
   document.getElementById(LANG[lang].search)?.addEventListener("input", () => cache[lang] && renderNews(lang));
-  document.getElementById(LANG[lang].filter)?.addEventListener("change", () => cache[lang] && renderNews(lang));
+  document.getElementById(LANG[lang].filter)?.addEventListener("change", () => {
+    if (cache[lang]) renderNews(lang);
+    // Sync category icon buttons
+    const cat = document.getElementById(LANG[lang].filter)?.value || "";
+    const strip = document.getElementById(lang === "urdu" ? "news-urdu" : "news-english")?.querySelector(".category-icons-strip");
+    if (strip) {
+      strip.querySelectorAll(".cat-icon-btn").forEach(b => {
+        b.classList.toggle("active", b.dataset.cat === cat);
+      });
+    }
+  });
 });
 
-// Open the right page for the current URL (e.g. someone opens a shared /news/<id> link)
+// Open the right page for the current URL
 route();
 
 // --- Contact Form WhatsApp Integration ---
@@ -284,27 +339,18 @@ const contactForm = document.getElementById("contactForm");
 if (contactForm) {
   contactForm.addEventListener("submit", function(e) {
     e.preventDefault();
-    
     const name = document.getElementById("contactName").value.trim();
     const email = document.getElementById("contactEmail").value.trim();
     const phone = document.getElementById("contactPhone").value.trim();
     const message = document.getElementById("contactMessage").value.trim();
-    
-    // WhatsApp number (without + and spaces)
     const whatsappNumber = "923054741419";
-    
-    // Create WhatsApp message
     const whatsappMessage = `*New Contact Form Submission*%0A%0A` +
       `*Name:* ${encodeURIComponent(name)}%0A` +
       `*Email:* ${encodeURIComponent(email)}%0A` +
       `*Phone:* ${encodeURIComponent(phone)}%0A%0A` +
       `*Message:*%0A${encodeURIComponent(message)}`;
-    
-    // Open WhatsApp with pre-filled message
     const whatsappURL = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
     window.open(whatsappURL, '_blank');
-    
-    // Reset form
     contactForm.reset();
   });
 }

@@ -7,20 +7,53 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=Noto+Nastaliq+Urdu:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
 
 <header>
-  <div class="brand">
-    <img src="/assets/logo.png" alt="The Report logo">
-    <div class="word"><b>THE REPORT</b><span>A MEDIA NETWORK</span></div>
+  <div class="header-inner">
+    <div class="brand">
+      <img src="/assets/logo.png" alt="The Report logo">
+      <div class="word"><b>THE REPORT</b><span>A MEDIA NETWORK</span></div>
+    </div>
+    <div class="header-nav">
+      <button class="nav-btn investigator-btn" data-nav="/investigator"><i class="fas fa-magnifying-glass"></i> The Investigator</button>
+      <button class="nav-btn family-btn" data-nav="/report-family"><i class="fas fa-users"></i> The Report Family</button>
+      <button class="nav-btn live-btn" id="liveBtn" data-nav="/live"><span class="live-dot"></span> LIVE</button>
+    </div>
+    <div class="header-social">
+      <a href="https://www.facebook.com/share/19iTSSTkv6/" target="_blank" rel="noopener" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+      <a href="https://www.instagram.com/thereport.network" target="_blank" rel="noopener" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+      <a href="https://www.tiktok.com/@thereport.pk" target="_blank" rel="noopener" aria-label="TikTok"><i class="fab fa-tiktok"></i></a>
+    </div>
+    <button class="mobile-menu-btn" id="mobileMenuBtn"><i class="fas fa-bars"></i></button>
   </div>
 </header>
 
+<!-- Mobile Menu Overlay -->
+<div class="mobile-menu" id="mobileMenu">
+  <button class="mobile-menu-close" id="mobileMenuClose"><i class="fas fa-times"></i></button>
+  <div class="mobile-menu-links">
+    <button class="mobile-nav-item" data-nav="/"><i class="fas fa-home"></i> Home</button>
+    <button class="mobile-nav-item" data-nav="/english"><i class="fas fa-newspaper"></i> English News</button>
+    <button class="mobile-nav-item" data-nav="/urdu"><i class="fas fa-newspaper"></i> اردو خبریں</button>
+    <button class="mobile-nav-item" data-nav="/investigator"><i class="fas fa-magnifying-glass"></i> The Investigator</button>
+    <button class="mobile-nav-item" data-nav="/report-family"><i class="fas fa-users"></i> The Report Family</button>
+    <button class="mobile-nav-item" data-nav="/live"><span class="live-dot"></span> LIVE</button>
+    <button class="mobile-nav-item" data-nav="/services"><i class="fas fa-briefcase"></i> Services</button>
+  </div>
+  <div class="mobile-social">
+    <a href="https://www.facebook.com/share/19iTSSTkv6/" target="_blank"><i class="fab fa-facebook-f"></i></a>
+    <a href="https://www.instagram.com/thereport.network" target="_blank"><i class="fab fa-instagram"></i></a>
+    <a href="https://www.tiktok.com/@thereport.pk" target="_blank"><i class="fab fa-tiktok"></i></a>
+  </div>
+</div>
+
 <main>
 
-  <!-- HOMEPAGE - 3 BIG BUTTONS -->
+  <!-- HOMEPAGE -->
   <section class="page active" id="homepage">
     <div class="homepage-container">
       <h1 class="welcome-title">Welcome to THE REPORT</h1>
@@ -109,7 +142,6 @@
       <button>Get a free quote today →</button>
     </div>
 
-    <!-- Contact Form Section -->
     <div class="section-head" style="margin-top: 70px;">
       <div class="k">GET IN TOUCH</div>
       <h2>Contact Us on WhatsApp</h2>
@@ -137,7 +169,7 @@
     </div>
   </section>
 
-  <!-- URDU NEWS PAGE (rendered dynamically by js/app.js from /api/news) -->
+  <!-- URDU NEWS PAGE -->
   <section class="page" id="news-urdu">
     <div class="back-to-home">
       <button class="back-btn" data-nav="/">← Back to Home</button>
@@ -153,9 +185,23 @@
           <option value="technology">ٹیکنالوجی</option>
           <option value="entertainment">تفریح</option>
           <option value="sports">کھیل</option>
+          <option value="politics">سیاست</option>
+          <option value="showbiz">شوبز</option>
         </select>
         <input type="text" id="searchInputUrdu" placeholder="خبر تلاش کریں...">
       </div>
+    </div>
+
+    <!-- Category Icons Strip -->
+    <div class="category-icons-strip">
+      <button class="cat-icon-btn" data-cat="" data-lang="urdu"><i class="fas fa-globe"></i><span class="urdu">سب</span></button>
+      <button class="cat-icon-btn" data-cat="politics" data-lang="urdu"><i class="fas fa-landmark"></i><span class="urdu">سیاست</span></button>
+      <button class="cat-icon-btn" data-cat="business" data-lang="urdu"><i class="fas fa-chart-line"></i><span class="urdu">کاروبار</span></button>
+      <button class="cat-icon-btn" data-cat="sports" data-lang="urdu"><i class="fas fa-futbol"></i><span class="urdu">کھیل</span></button>
+      <button class="cat-icon-btn" data-cat="showbiz" data-lang="urdu"><i class="fas fa-star"></i><span class="urdu">شوبز</span></button>
+      <button class="cat-icon-btn" data-cat="technology" data-lang="urdu"><i class="fas fa-microchip"></i><span class="urdu">ٹیکنالوجی</span></button>
+      <button class="cat-icon-btn" data-cat="entertainment" data-lang="urdu"><i class="fas fa-film"></i><span class="urdu">تفریح</span></button>
+      <button class="cat-icon-btn" data-cat="general" data-lang="urdu"><i class="fas fa-newspaper"></i><span class="urdu">عام</span></button>
     </div>
 
     <div class="news-body">
@@ -182,9 +228,23 @@
           <option value="technology">Technology</option>
           <option value="entertainment">Entertainment</option>
           <option value="sports">Sports</option>
+          <option value="politics">Politics</option>
+          <option value="showbiz">Showbiz</option>
         </select>
         <input type="text" id="searchInputEnglish" placeholder="Search news...">
       </div>
+    </div>
+
+    <!-- Category Icons Strip -->
+    <div class="category-icons-strip">
+      <button class="cat-icon-btn active" data-cat="" data-lang="english"><i class="fas fa-globe"></i><span>All</span></button>
+      <button class="cat-icon-btn" data-cat="politics" data-lang="english"><i class="fas fa-landmark"></i><span>Politics</span></button>
+      <button class="cat-icon-btn" data-cat="business" data-lang="english"><i class="fas fa-chart-line"></i><span>Business</span></button>
+      <button class="cat-icon-btn" data-cat="sports" data-lang="english"><i class="fas fa-futbol"></i><span>Sports</span></button>
+      <button class="cat-icon-btn" data-cat="showbiz" data-lang="english"><i class="fas fa-star"></i><span>Showbiz</span></button>
+      <button class="cat-icon-btn" data-cat="technology" data-lang="english"><i class="fas fa-microchip"></i><span>Technology</span></button>
+      <button class="cat-icon-btn" data-cat="entertainment" data-lang="english"><i class="fas fa-film"></i><span>Entertainment</span></button>
+      <button class="cat-icon-btn" data-cat="general" data-lang="english"><i class="fas fa-newspaper"></i><span>General</span></button>
     </div>
 
     <div class="news-body">
@@ -195,7 +255,214 @@
     </div>
   </section>
 
-  <!-- SINGLE STORY PAGE (opens on OUR site at /news/<id>, rendered by js/app.js) -->
+  <!-- THE INVESTIGATOR PAGE -->
+  <section class="page" id="investigator">
+    <div class="back-to-home">
+      <button class="back-btn" data-nav="/">← Back to Home</button>
+    </div>
+    <div class="investigator-hero">
+      <div class="inv-hero-content">
+        <i class="fas fa-magnifying-glass inv-hero-icon"></i>
+        <h1>The Investigator</h1>
+        <p>In-depth investigative journalism — uncovering the truth, one story at a time.</p>
+      </div>
+    </div>
+    <div class="inv-section">
+      <div class="section-head">
+        <div class="k">INVESTIGATIVE REPORTS</div>
+        <h2>Deep-Dive Stories & Exposés</h2>
+      </div>
+      <div class="inv-placeholder">
+        <i class="fas fa-file-magnifying-glass"></i>
+        <h3>Coming Soon</h3>
+        <p>Our investigative journalism team is working on groundbreaking stories. Stay tuned for hard-hitting reports that uncover the truth.</p>
+      </div>
+      <div class="section-head" style="margin-top:60px;">
+        <div class="k">OUR INVESTIGATORS</div>
+        <h2>Meet the Journalist Team</h2>
+      </div>
+      <div class="journalist-grid">
+        <div class="journalist-card">
+          <div class="journalist-avatar"><i class="fas fa-user-secret"></i></div>
+          <h4>Senior Investigator</h4>
+          <p>Lead investigative journalist with 10+ years of experience in uncovering stories that matter.</p>
+          <span class="journalist-stories">Investigations: Coming Soon</span>
+        </div>
+        <div class="journalist-card">
+          <div class="journalist-avatar"><i class="fas fa-user-secret"></i></div>
+          <h4>Data Journalist</h4>
+          <p>Specializing in data-driven investigations and analysis of public records.</p>
+          <span class="journalist-stories">Investigations: Coming Soon</span>
+        </div>
+        <div class="journalist-card">
+          <div class="journalist-avatar"><i class="fas fa-user-secret"></i></div>
+          <h4>Field Reporter</h4>
+          <p>Ground-level reporting from conflict zones and underreported communities.</p>
+          <span class="journalist-stories">Investigations: Coming Soon</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- THE REPORT FAMILY PAGE -->
+  <section class="page" id="report-family">
+    <div class="back-to-home">
+      <button class="back-btn" data-nav="/">← Back to Home</button>
+    </div>
+    <div class="family-hero">
+      <div class="family-hero-content">
+        <i class="fas fa-users family-hero-icon"></i>
+        <h1>The Report Family</h1>
+        <p>Meet the people behind the stories — our editorial team and valued contributors.</p>
+      </div>
+    </div>
+    <div class="family-section">
+      <div class="section-head">
+        <div class="k">EDITORIAL TEAM</div>
+        <h2>Official Authors</h2>
+      </div>
+      <div class="author-grid">
+        <div class="author-card official">
+          <div class="author-avatar"><i class="fas fa-user-tie"></i></div>
+          <div class="author-badge">Official</div>
+          <h4>Editor-in-Chief</h4>
+          <p>Leading the editorial vision and strategy of The Report Network.</p>
+          <span class="author-articles">Articles: Coming Soon</span>
+        </div>
+        <div class="author-card official">
+          <div class="author-avatar"><i class="fas fa-user-tie"></i></div>
+          <div class="author-badge">Official</div>
+          <h4>Senior Editor</h4>
+          <p>Overseeing news coverage and ensuring journalistic standards.</p>
+          <span class="author-articles">Articles: Coming Soon</span>
+        </div>
+        <div class="author-card official">
+          <div class="author-avatar"><i class="fas fa-user-tie"></i></div>
+          <div class="author-badge">Official</div>
+          <h4>News Desk Lead</h4>
+          <p>Managing daily news operations and breaking news coverage.</p>
+          <span class="author-articles">Articles: Coming Soon</span>
+        </div>
+      </div>
+
+      <div class="section-head" style="margin-top:60px;">
+        <div class="k">CONTRIBUTORS</div>
+        <h2>Guest Authors</h2>
+      </div>
+      <div class="author-grid">
+        <div class="author-card guest">
+          <div class="author-avatar guest-av"><i class="fas fa-pen-fancy"></i></div>
+          <div class="author-badge guest-badge">Guest</div>
+          <h4>Guest Columnist</h4>
+          <p>External perspective and opinion pieces from experienced writers.</p>
+          <span class="author-articles">Articles: Coming Soon</span>
+        </div>
+        <div class="author-card guest">
+          <div class="author-avatar guest-av"><i class="fas fa-pen-fancy"></i></div>
+          <div class="author-badge guest-badge">Guest</div>
+          <h4>Contributing Writer</h4>
+          <p>Specialized coverage from industry experts and community voices.</p>
+          <span class="author-articles">Articles: Coming Soon</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LIVE PAGE -->
+  <section class="page" id="live">
+    <div class="back-to-home">
+      <button class="back-btn" data-nav="/">← Back to Home</button>
+    </div>
+    <div class="live-hero">
+      <div class="live-hero-content">
+        <div class="live-indicator-big"><span class="live-dot-big"></span> LIVE</div>
+        <h1>Live Coverage</h1>
+        <p>Real-time updates on breaking news and trending stories.</p>
+      </div>
+    </div>
+    <div class="live-section">
+      <div class="live-status-bar" id="liveStatusBar">
+        <span class="live-status-dot"></span>
+        <span id="liveStatusText">No active live coverage right now. Check back during breaking news.</span>
+      </div>
+      <div class="live-feed" id="liveFeed">
+        <div class="live-placeholder">
+          <i class="fas fa-satellite-dish"></i>
+          <h3>Live Coverage Standby</h3>
+          <p>When breaking news or trending events occur, this section will provide real-time updates with timestamps and minute-by-minute coverage.</p>
+          <div class="live-features">
+            <div class="live-feature"><i class="fas fa-clock"></i> Timestamped Updates</div>
+            <div class="live-feature"><i class="fas fa-bolt"></i> Real-Time Feed</div>
+            <div class="live-feature"><i class="fas fa-camera"></i> Media Coverage</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ZARVITY MEDIA PAGE -->
+  <section class="page" id="zarvity">
+    <div class="back-to-home">
+      <button class="back-btn" data-nav="/">← Back to Home</button>
+    </div>
+    <div class="zarvity-hero">
+      <div class="zarvity-hero-content">
+        <img src="/assets/zarvity-logo.png" alt="Zarvity Media" class="zarvity-hero-logo">
+        <h1>Zarvity Media</h1>
+        <p>Your Digital Growth Partner — Powering Brands with Technology & Creativity</p>
+      </div>
+    </div>
+    <div class="zarvity-section">
+      <div class="section-head">
+        <div class="k">WHAT WE DO</div>
+        <h2>Our Services</h2>
+      </div>
+      <div class="zarvity-services-grid">
+        <div class="zarvity-svc-card" style="--delay:0.1s">
+          <div class="zarvity-svc-icon"><i class="fas fa-robot"></i></div>
+          <h3>AI Automations & Agents</h3>
+          <p>Smart AI-powered automation solutions and intelligent agents that streamline your business processes.</p>
+        </div>
+        <div class="zarvity-svc-card" style="--delay:0.2s">
+          <div class="zarvity-svc-icon"><i class="fas fa-shopping-cart"></i></div>
+          <h3>Shopify & Amazon</h3>
+          <p>Complete e-commerce solutions — from Shopify store setup to Amazon marketplace management.</p>
+        </div>
+        <div class="zarvity-svc-card" style="--delay:0.3s">
+          <div class="zarvity-svc-icon"><i class="fas fa-bullhorn"></i></div>
+          <h3>Digital Marketing</h3>
+          <p>Strategic digital marketing campaigns that drive engagement, leads, and conversions.</p>
+        </div>
+        <div class="zarvity-svc-card" style="--delay:0.4s">
+          <div class="zarvity-svc-icon"><i class="fas fa-video"></i></div>
+          <h3>Editing</h3>
+          <p>Professional video and photo editing services — making your content shine across all platforms.</p>
+        </div>
+        <div class="zarvity-svc-card" style="--delay:0.5s">
+          <div class="zarvity-svc-icon"><i class="fas fa-search"></i></div>
+          <h3>Google SEO</h3>
+          <p>Search engine optimization that puts your business at the top of Google search results.</p>
+        </div>
+        <div class="zarvity-svc-card" style="--delay:0.6s">
+          <div class="zarvity-svc-icon"><i class="fas fa-laptop-code"></i></div>
+          <h3>Websites</h3>
+          <p>Custom website design and development — responsive, fast, and built to convert visitors into customers.</p>
+        </div>
+        <div class="zarvity-svc-card" style="--delay:0.7s">
+          <div class="zarvity-svc-icon"><i class="fas fa-mobile-screen-button"></i></div>
+          <h3>Mobile Apps</h3>
+          <p>Native and cross-platform mobile app development for iOS and Android.</p>
+        </div>
+      </div>
+      <div class="zarvity-cta">
+        <h3>Ready to Grow Your Brand?</h3>
+        <p>Contact Zarvity Media today and let's build something amazing together.</p>
+        <a href="https://wa.me/9609654495?text=Hi%20Zarvity%20Media!%20I'm%20interested%20in%20your%20services." target="_blank" class="primary-btn">Contact Us on WhatsApp <i class="fab fa-whatsapp"></i></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- SINGLE STORY PAGE -->
   <section class="page" id="article">
     <div class="back-to-home">
       <button class="back-btn" id="articleBackBtn">← Back to News</button>
@@ -206,13 +473,37 @@
 </main>
 
 <footer>
-  <div class="brand">
-    <img src="/assets/logo.png" alt="The Report logo" style="width:36px;height:36px;">
-    <div class="word"><b>THE REPORT</b><span>A MEDIA NETWORK</span></div>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <div class="brand">
+          <img src="/assets/logo.png" alt="The Report logo" style="width:36px;height:36px;">
+          <div class="word"><b>THE REPORT</b><span>A MEDIA NETWORK</span></div>
+        </div>
+        <p>Professional services. Clear communication. Real results.</p>
+      </div>
+      <div class="footer-links">
+        <h4>Quick Links</h4>
+        <a href="#" data-nav="/english">English News</a>
+        <a href="#" data-nav="/urdu">اردو خبریں</a>
+        <a href="#" data-nav="/investigator">The Investigator</a>
+        <a href="#" data-nav="/report-family">The Report Family</a>
+        <a href="#" data-nav="/services">Services</a>
+      </div>
+      <div class="footer-social-section">
+        <h4>Follow Us</h4>
+        <div class="footer-social-icons">
+          <a href="https://www.facebook.com/share/19iTSSTkv6/" target="_blank"><i class="fab fa-facebook-f"></i></a>
+          <a href="https://www.instagram.com/thereport.network" target="_blank"><i class="fab fa-instagram"></i></a>
+          <a href="https://www.tiktok.com/@thereport.pk" target="_blank"><i class="fab fa-tiktok"></i></a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2026 The Report — A Media Network</p>
+      <p class="footer-credit">Powered by <a href="#" data-nav="/zarvity" class="zarvity-link"><strong>Zarvity Media</strong> <img src="/assets/zarvity-logo.png" alt="Zarvity Media" class="zarvity-footer-logo"></a></p>
+    </div>
   </div>
-  <p>Professional services. Clear communication. Real results.</p>
-  <p>© 2026 The Report — A Media Network</p>
-  <p class="footer-credit">Powered by <strong>Zarvity Media</strong></p>
 </footer>
 
 <script src="/js/app.js"></script>
