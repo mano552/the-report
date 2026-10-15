@@ -80,3 +80,17 @@ if (!process.env.NEWSDATA_API_KEY || !process.env.GEMINI_API_KEY) {
   console.warn("NEWSDATA_API_KEY and/or GEMINI_API_KEY missing — the AI agent will fail until you add them (both free).");
 }
 if (!process.env.ADMIN_KEY) console.warn("ADMIN_KEY missing — the admin panel cannot log in.");
+
+// --- Auto-fix: remove any pollinations.ai images on startup ---
+{
+  const allNews = db.getAllNewsIncludingDrafts();
+  const bad = allNews.filter(n => n.image && String(n.image).includes("pollinations.ai"));
+  if (bad.length > 0) {
+    console.log(`[startup] Removing ${bad.length} fake pollinations.ai images...`);
+    for (const n of bad) {
+      db.updateNews(n.id, { image: null });
+      console.log(`  ✅ Cleaned: "${n.title.slice(0, 50)}"`);
+    }
+    console.log("[startup] Done. Logo placeholder will show until new news is generated with real images.");
+  }
+}

@@ -40,8 +40,11 @@ function getStatus() {
   return { ...state };
 }
 
-/** Starts a run. Returns false if one is already running. Never throws. */
-function startRun(trigger = "manual") {
+/** Starts a run. Returns false if one is already running. Never throws.
+ * @param {string} trigger - "manual" or "cron"
+ * @param {Object} options - { language, category, date } passed to fetchFreshNews
+ */
+function startRun(trigger = "manual", options = {}) {
   if (state.running) return false;
 
   Object.assign(state, {
@@ -59,11 +62,11 @@ function startRun(trigger = "manual") {
     progress: "Starting…",
     log: [],
   });
-  console.log(`[${state.startedAt}] AI agent started (${trigger})`);
+  console.log(`[${state.startedAt}] AI agent started (${trigger})`, options);
 
   (async () => {
     try {
-      const items = await fetchFreshNews(progress);
+      const items = await fetchFreshNews(progress, options);
       const added = db.addManyNews(items);
       Object.assign(state, {
         ok: true,

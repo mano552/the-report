@@ -208,6 +208,17 @@
     transition: all 0.3s ease;
     background: #fff;
   }
+  select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    padding-right: 44px;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%230A2557' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    background-size: 12px;
+  }
   
   input:focus, textarea:focus, select:focus {
     outline: none;
@@ -494,13 +505,13 @@
 <body>
 <div class="admin-header">
   <div class="header-content">
-    <div class="logo-section">
+    <a href="/" class="logo-section" style="text-decoration:none;color:inherit;">
       <img src="/assets/logo.png" alt="The Report">
       <div class="logo-text">
         <h1>THE REPORT</h1>
         <p>ADMIN PANEL</p>
       </div>
-    </div>
+    </a>
     <a href="/" class="back-btn">← Back to Website</a>
   </div>
 </div>
@@ -625,6 +636,32 @@
       <h2>All News Stories</h2>
     </div>
     <div style="margin-bottom:16px">
+      <div class="form-grid" style="margin-bottom:16px">
+        <div class="form-group">
+          <label>Language to Generate</label>
+          <select id="agentLang">
+            <option value="both">🌐 Both (Urdu + English)</option>
+            <option value="urdu">🇵🇰 Urdu Only</option>
+            <option value="english">🇬🇧 English Only</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Category Filter (optional)</label>
+          <select id="agentCategory">
+            <option value="">All Categories</option>
+            <option value="general">📰 General</option>
+            <option value="business">💼 Business</option>
+            <option value="technology">💻 Technology</option>
+            <option value="entertainment">🎬 Entertainment</option>
+            <option value="sports">⚽ Sports</option>
+            <option value="politics">🏛 Politics</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Set News Date (optional — defaults to original date)</label>
+          <input type="date" id="agentDate">
+        </div>
+      </div>
       <button type="button" id="runAgentBtn">🤖 Run AI agent now</button>
       <div id="agentStatus" style="margin-top:12px"></div>
     </div>
@@ -646,8 +683,8 @@
           <option value="technology">Technology</option>
           <option value="entertainment">Entertainment</option>
           <option value="sports">Sports</option>
-          <option value="health">Health</option>
-          <option value="science">Science</option>
+          <!-- <option value="health">Health</option> -->
+          <!-- <option value="science">Science</option> -->
         </select>
       </div>
     </div>
@@ -921,7 +958,20 @@
     if (!keyInput.value) return showStatus(addStatusEl, '❌ Enter the admin key at the top first.', 'error');
     runBtn.disabled = true; runBtn.textContent = '⏳ Starting...';
     try {
-      const res = await fetch('/api/news/fetch/run', { method: 'POST', headers: headers() });
+      // Gather agent options
+      const agentOpts = {};
+      const agentLang = document.getElementById('agentLang')?.value;
+      const agentCat = document.getElementById('agentCategory')?.value;
+      const agentDate = document.getElementById('agentDate')?.value;
+      if (agentLang && agentLang !== 'both') agentOpts.language = agentLang;
+      if (agentCat) agentOpts.category = agentCat;
+      if (agentDate) agentOpts.date = agentDate;
+
+      const res = await fetch('/api/news/fetch/run', {
+        method: 'POST',
+        headers: headers(),
+        body: JSON.stringify(agentOpts),
+      });
       let data = {};
       try { data = await res.json(); } catch { throw new Error('Server returned ' + res.status + ' (not JSON). Is the Node app running?'); }
       if (res.status === 401) throw new Error('Wrong admin key.');

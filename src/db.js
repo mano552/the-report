@@ -7,10 +7,17 @@ const fs = require("fs");
 const path = require("path");
 
 const DB_PATH = path.join(__dirname, "..", "data", "news.json");
+const BACKUP_PATH = path.join(__dirname, "..", "data", "news.backup.json");
 
 function ensureDbFile() {
   if (!fs.existsSync(DB_PATH)) {
-    fs.writeFileSync(DB_PATH, JSON.stringify({ news: [] }, null, 2), "utf-8");
+    // If a backup exists (from before a deploy), restore it instead of starting empty
+    if (fs.existsSync(BACKUP_PATH)) {
+      fs.copyFileSync(BACKUP_PATH, DB_PATH);
+      console.log("[db] Restored news.json from backup.");
+    } else {
+      fs.writeFileSync(DB_PATH, JSON.stringify({ news: [] }, null, 2), "utf-8");
+    }
   }
 }
 
@@ -30,6 +37,8 @@ function writeDb(data) {
   const tmp = DB_PATH + ".tmp";
   fs.writeFileSync(tmp, JSON.stringify(data, null, 2), "utf-8");
   fs.renameSync(tmp, DB_PATH);
+  // Also keep a backup — if a git deploy replaces/deletes news.json, the backup survives
+  try { fs.copyFileSync(DB_PATH, BACKUP_PATH); } catch {}
 }
 
 // Stories without a "status" (added before drafts existed) count as published.

@@ -1,27 +1,24 @@
 // The "AI agent" of THE REPORT.
 //
 // What it does every run (see NEWS_FETCH_CRON in .env, default every 3 hours):
-//   1. Pulls fresh headlines for Pakistan from NewsData.io  (Urdu + English)
-//   2. Skips stories that are already saved
+//   1. Pulls fresh headlines for Pakistan from NewsData.io (Urdu + English)
+//   2. Skips stories whose source URL is already in the database
 //   3. Asks Google Gemini to REWRITE each story in its own words
-//      (Urdu stories stay Urdu, English stories stay English) and to pick a
-//      category, an image description and video keywords
-//   4. Attaches an AI-generated image (Pollinations.ai, free, no key) and an
-//      optional free stock video (Pexels, free key)
+//      (Urdu stories stay Urdu, English stories stay English) and pick a category
+//   4. Uses the SOURCE ARTICLE's original image (from NewsData image_url)
 //   5. Saves everything as a DRAFT (or published, if AUTO_PUBLISH=true)
 //
 // Keys live ONLY here on the server (.env) — never in public/js.
 //
 // Docs: https://newsdata.io/documentation
 //       https://ai.google.dev/gemini-api/docs
-//       https://www.pexels.com/api/documentation/
 
 const crypto = require("crypto");
 const db = require("./db");
 
 const NEWSDATA_URL = "https://newsdata.io/api/1/latest";
 const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
-const PEXELS_URL = "https://api.pexels.com/videos/search";
+// No external image APIs — source article image only
 
 // Categories used by the website filters and the admin panel.
 const ALLOWED_CATEGORIES = ["general", "business", "technology", "entertainment", "sports", "health", "science"];
@@ -50,7 +47,7 @@ function config() {
   return {
     newsDataKey: process.env.NEWSDATA_API_KEY,
     geminiKey: process.env.GEMINI_API_KEY,
-    pexelsKey: process.env.PEXELS_API_KEY,
+    // images come from source article directly
     // Several models can be listed (comma separated). If one is overloaded (503) or retired (404), the next is tried.
     // GEMINI_MODEL set in .env → use exactly those. Empty → ask Google which models this key can use
     // (see resolveModels). Old names like gemini-2.5-flash are retired for new users.
@@ -107,9 +104,7 @@ Return ONLY valid JSON, no markdown fences:
   "title": "new headline in ${languageName}",
   "excerpt": "2-3 sentence summary in ${languageName} (about 30-60 words), shown on the news card",
   "body": "the full story in ${languageName}: 2-5 short paragraphs separated by a blank line (\\n\\n), only facts from the source",
-  "category": "exactly one of: ${ALLOWED_CATEGORIES.join(", ")}",
-  "image_prompt": "English description of a realistic news-style photo for this story. No real people, no logos, no text, no flags of parties",
-  "video_keywords": "2-3 simple English words to search stock video"
+  "category": "exactly one of: ${ALLOWED_CATEGORIES.join(", ")}"
 }`;
 }
 
@@ -282,35 +277,36 @@ function parseJson(text) {
   return obj;
 }
 
-// ---------- 3) Media: image + video ----------
+// ---------- 3) Media: source article image + video ----------
 
-function imageUrlFor(prompt, seedText) {
-  const safePrompt = String(prompt || "news photo").slice(0, 300);
-  const seed = parseInt(crypto.createHash("md5").update(seedText).digest("hex").slice(0, 6), 16);
-  return `https://image.pollinations.ai/prompt/${encodeURIComponent(safePrompt)}?width=1024&height=576&nologo=true&seed=${seed}`;
+function getSourceImage(article) {
+  const img = article.image_url || article.urlToImage || null;
+  if (img && /^https?:\/\//i.test(String(img))) return img;
+  return null;
 }
 
-async function findVideo(pexelsKey, keywords) {
-  if (!pexelsKey || !keywords) return null;
-  try {
-    const res = await fetchWithTimeout(`${PEXELS_URL}?query=${encodeURIComponent(keywords)}&per_page=1&orientation=landscape`, {
-      headers: { Authorization: pexelsKey },
-    }, 15000);
-    if (!res.ok) return null;
-    const data = await res.json();
-    const files = data?.videos?.[0]?.video_files || [];
-    const pick = files.find((f) => f.quality === "sd" && f.width <= 1000) || files.find((f) => f.quality === "sd") || files[0];
-    return pick?.link || null;
-  } catch {
-    return null; // video is a bonus, never fail the story because of it
-  }
+function getSourceVideo(article) {
+  const vid = article.video_url || null;
+  if (vid && /^https?:\/\//i.test(String(vid))) return vid;
+  return null;
 }
 
 // ---------- 4) Put it together ----------
 
 async function processLanguage(cfg, language, knownUrls, errors, notes) {
   const headlines = await fetchHeadlines(cfg.newsDataKey, language);
-  const fresh = headlines.filter((a) => !knownUrls.has(a.link)).slice(0, cfg.perLanguage);
+  // If a category filter was requested, apply it
+  let filtered = headlines;
+  if (cfg.categoryFilter) {
+    const catMap = { general: "top", business: "business", technology: "technology", entertainment: "entertainment", sports: "sports", health: "health", science: "science" };
+    const ndCat = catMap[cfg.categoryFilter] || cfg.categoryFilter;
+    filtered = headlines.filter((a) => {
+      const cats = Array.isArray(a.category) ? a.category : [a.category];
+      return cats.some(c => String(c).toLowerCase() === ndCat || String(c).toLowerCase() === cfg.categoryFilter);
+    });
+    if (filtered.length === 0) filtered = headlines; // fallback to all if filter returns nothing
+  }
+  const fresh = filtered.filter((a) => !knownUrls.has(a.link)).slice(0, cfg.perLanguage);
   report(`NewsData: ${headlines.length} ${language === "ur" ? "Urdu" : "English"} headline(s), ${fresh.length} new to rewrite.`);
   const records = [];
   if (fresh.length === 0) {
@@ -324,7 +320,10 @@ async function processLanguage(cfg, language, knownUrls, errors, notes) {
     }
     try {
       const ai = await callGemini(cfg, language, article);
-      const video = await findVideo(cfg.pexelsKey, ai.video_keywords);
+      const image = getSourceImage(article);
+      const video = getSourceVideo(article);
+      // Use the requested date or article's date
+      const useDate = cfg.dateOverride || (article.pubDate || "").slice(0, 10) || new Date().toISOString().slice(0, 10);
       records.push({
         id: crypto.randomUUID(),
         title: String(ai.title).trim(),
@@ -332,10 +331,10 @@ async function processLanguage(cfg, language, knownUrls, errors, notes) {
         body: String(ai.body || ai.excerpt).trim(),
         category: ALLOWED_CATEGORIES.includes(String(ai.category).toLowerCase()) ? String(ai.category).toLowerCase() : "general",
         language: language === "ur" ? "urdu" : "english",
-        date: (article.pubDate || "").slice(0, 10) || new Date().toISOString().slice(0, 10),
+        date: useDate,
         sourceUrl: article.link,
         sourceName: article.source_name || article.source_id || null,
-        image: imageUrlFor(ai.image_prompt, article.link),
+        image,
         video,
         featured: false,
         status: cfg.status,
@@ -344,28 +343,32 @@ async function processLanguage(cfg, language, knownUrls, errors, notes) {
       knownUrls.add(article.link);
       report(`Saved: "${String(ai.title).slice(0, 70)}"`);
     } catch (err) {
-      if (err instanceof FatalAgentError) throw err; // stop everything, show the reason
-      // One bad story must not stop the rest.
+      if (err instanceof FatalAgentError) throw err;
       errors.push(`${article.link}: ${err.message}`);
       report(`Skipped one story: ${err.message}`);
       console.error("Skipped one story:", err.message);
     }
-    if (article !== fresh[fresh.length - 1]) await sleep(cfg.delayMs); // stay inside Gemini free-tier rate limits
+    if (article !== fresh[fresh.length - 1]) await sleep(cfg.delayMs);
   }
   return records;
 }
 
 /**
- * Returns freshly written story records (Urdu + English), ready for db.addManyNews().
- * Throws only when nothing can run at all (missing keys, NewsData down).
+ * Returns freshly written story records, ready for db.addManyNews().
+ * @param {Function} onProgress - callback for status updates
+ * @param {Object} options - { language: "urdu"|"english"|"both", category: "", date: "" }
  */
-async function fetchFreshNews(onProgress) {
+async function fetchFreshNews(onProgress, options = {}) {
   report = typeof onProgress === "function" ? onProgress : (m) => console.log("[agent]", m);
   const cfg = config();
   if (!cfg.newsDataKey) throw new Error("NEWSDATA_API_KEY is missing in .env");
   if (!cfg.geminiKey) {
     throw new Error("GEMINI_API_KEY is missing in .env (needed to rewrite stories; raw copies are never published).");
   }
+
+  // Apply options
+  if (options.category) cfg.categoryFilter = options.category;
+  if (options.date) cfg.dateOverride = options.date;
 
   await resolveModels(cfg);
 
@@ -374,13 +377,17 @@ async function fetchFreshNews(onProgress) {
   const notes = [];
   const all = [];
 
-  for (const language of ["ur", "en"]) {
+  // Determine which languages to process
+  let languages = ["ur", "en"]; // default: both
+  if (options.language === "urdu") languages = ["ur"];
+  else if (options.language === "english") languages = ["en"];
+
+  for (const language of languages) {
     if (Date.now() > cfg.deadline) break;
     try {
       all.push(...(await processLanguage(cfg, language, knownUrls, errors, notes)));
     } catch (err) {
       if (err instanceof FatalAgentError) {
-        // Keep stories already written in this run, but stop here.
         if (all.length) { all.errors = [...errors, err.message]; all.notes = notes; return all; }
         throw err;
       }
@@ -391,7 +398,7 @@ async function fetchFreshNews(onProgress) {
 
   if (all.length === 0 && errors.length > 0) throw new Error(errors.join(" | "));
   if (errors.length) console.warn(`Finished with ${errors.length} problem(s):`, errors);
-  all.errors = errors; // partial problems (some stories skipped) — shown in the admin panel
+  all.errors = errors;
   all.notes = notes;
   return all;
 }

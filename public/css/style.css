@@ -279,8 +279,11 @@ main { position: relative; z-index: 1; max-width: 1180px; margin: 0 auto; paddin
 .search-row input:focus { outline: none; background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.5); }
 .search-row input::placeholder { color: #A9B4D4; }
 .search-row select {
-  background: var(--red); color: #fff; border: none; padding: 12px 20px; border-radius: 999px;
+  background: var(--red); color: #fff; border: none; padding: 12px 20px; padding-right: 40px; border-radius: 999px;
   font-family: 'Inter', sans-serif; font-weight: 700; cursor: pointer; transition: all 0.3s ease;
+  appearance: none; -webkit-appearance: none; -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='white' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 14px center; background-size: 12px;
 }
 #news-urdu .search-row select { font-family: 'Noto Nastaliq Urdu', serif; }
 .search-row select:hover { background: var(--red-deep); transform: translateY(-2px); }

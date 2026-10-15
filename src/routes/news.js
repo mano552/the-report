@@ -34,7 +34,11 @@ router.get("/", (req, res) => {
 // GET  /api/news/fetch/status — progress / result of the latest run
 // (Also runs on the cron schedule automatically — see server.js)
 router.post("/fetch/run", requireAdmin, (req, res) => {
-  if (!startRun("manual")) {
+  const options = {};
+  if (req.body?.language) options.language = req.body.language;
+  if (req.body?.category) options.category = req.body.category;
+  if (req.body?.date) options.date = req.body.date;
+  if (!startRun("manual", options)) {
     return res.status(409).json({ error: "The agent is already running. Wait a minute.", status: getStatus() });
   }
   res.status(202).json({ started: true, status: getStatus() });
