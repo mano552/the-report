@@ -21,7 +21,7 @@ const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 // No external image APIs — source article image only
 
 // Categories used by the website filters and the admin panel.
-const ALLOWED_CATEGORIES = ["general", "business", "technology", "entertainment", "sports", "health", "science"];
+const ALLOWED_CATEGORIES = ["general", "business", "technology", "entertainment", "sports", "health", "science", "unique"];
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 

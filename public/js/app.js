@@ -7,12 +7,14 @@
 const PAGE_FOR_PATH = {
   "/": "homepage", "/english": "news-english", "/urdu": "news-urdu",
   "/services": "services", "/investigator": "investigator",
-  "/report-family": "report-family", "/live": "live", "/zarvity": "zarvity"
+  "/report-family": "report-family", "/official-authors": "official-authors",
+  "/guest-authors": "guest-authors", "/live": "live", "/zarvity": "zarvity"
 };
 const PATH_FOR_PAGE = {
   homepage: "/", "news-english": "/english", "news-urdu": "/urdu",
   services: "/services", investigator: "/investigator",
-  "report-family": "/report-family", live: "/live", zarvity: "/zarvity"
+  "report-family": "/report-family", "official-authors": "/official-authors",
+  "guest-authors": "/guest-authors", live: "/live", zarvity: "/zarvity"
 };
 
 const LANG = {
@@ -305,7 +307,7 @@ function getCategoryUrdu(category) {
   const categoryMap = {
     general: "عام", business: "کاروبار", technology: "ٹیکنالوجی", entertainment: "تفریح",
     sports: "کھیل", science: "سائنس", health: "صحت", top: "اہم خبریں",
-    politics: "سیاست", showbiz: "شوبز",
+    politics: "سیاست", showbiz: "شوبز", unique: "منفرد اور حیرت انگیز",
   };
   return categoryMap[category] || "خبریں";
 }

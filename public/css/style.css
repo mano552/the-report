@@ -289,23 +289,23 @@ main { position: relative; z-index: 1; max-width: 1180px; margin: 0 auto; paddin
 .search-row select:hover { background: var(--red-deep); transform: translateY(-2px); }
 
 .news-body { display: grid; grid-template-columns: 1fr; gap: 34px; margin-top: 44px; }
-.news-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px; margin-top: 30px; }
+.news-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; margin-top: 30px; }
 
 .news-card-modern { background: var(--card); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); transition: all 0.3s ease; cursor: pointer; }
 .news-card-modern:hover { transform: translateY(-8px); box-shadow: 0 24px 48px -20px rgba(10, 37, 87, 0.45); }
-.news-image { width: 100%; height: 200px; background: linear-gradient(135deg, var(--navy-3), var(--navy)); position: relative; overflow: hidden; }
+.news-image { width: 100%; height: 130px; background: linear-gradient(135deg, var(--navy-3), var(--navy)); position: relative; overflow: hidden; }
 .news-image img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease; }
 .news-card-modern:hover .news-image img { transform: scale(1.05); }
 .news-category-badge {
   position: absolute; top: 12px; right: 12px; background: var(--red); color: #fff;
   padding: 6px 14px; border-radius: 999px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
 }
-.news-content { padding: 20px; }
-.news-content h3 { font-size: 1.15rem; font-weight: 700; margin: 0 0 12px; color: var(--navy); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.news-content { padding: 12px; }
+.news-content h3 { font-size: 0.88rem; font-weight: 700; margin: 0 0 6px; color: var(--navy); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 #news-urdu .news-content h3 { font-family: 'Noto Nastaliq Urdu', serif; line-height: 2; font-size: 1.3rem; }
-.news-content p { color: var(--ink-soft); font-size: 0.92rem; line-height: 1.6; margin: 0 0 14px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.news-content p { display: none; }
 #news-urdu .news-content p { font-family: 'Noto Nastaliq Urdu', serif; line-height: 2.2; font-size: 1rem; }
-.news-meta { display: flex; justify-content: space-between; align-items: center; padding-top: 14px; border-top: 1px solid var(--line); }
+.news-meta { display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px solid var(--line); }
 .news-date { font-size: 0.8rem; color: var(--ink-soft); font-weight: 600; }
 .news-read-more { color: var(--red); font-weight: 700; font-size: 0.85rem; text-decoration: none; transition: color 0.3s ease; }
 .news-read-more:hover { color: var(--red-deep); }
@@ -533,4 +533,23 @@ footer { position: relative; z-index: 1; background: var(--navy-deep); color: #C
   .contact-form-container { padding: 28px 20px; }
   .zarvity-services-grid { grid-template-columns: 1fr; }
   .journalist-grid, .author-grid { grid-template-columns: 1fr; }
+  .news-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .news-image { height: 100px; }
+  .news-content h3 { font-size: 0.8rem; }
 }
+
+/* Author photo card */
+.author-avatar-photo { width: 100px; height: 100px; border-radius: 50%; overflow: hidden; margin: 0 auto 16px; border: 3px solid var(--navy); }
+.author-avatar-photo img { width: 100%; height: 100%; object-fit: cover; }
+.author-card-large { max-width: 400px; margin: 0 auto; }
+.author-qual { font-weight: 700; color: var(--navy-3); font-size: 0.85rem; margin: 0 0 8px !important; }
+
+/* Author Photo Popup */
+.photo-popup-overlay {
+  display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.85); z-index: 9999; align-items: center; justify-content: center; cursor: pointer;
+}
+.photo-popup-overlay.open { display: flex; animation: fadeIn 0.3s ease; }
+.photo-popup-overlay img { max-width: 90vw; max-height: 90vh; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); object-fit: contain; }
+.author-avatar-photo { cursor: pointer; transition: transform 0.3s ease; }
+.author-avatar-photo:hover { transform: scale(1.08); }

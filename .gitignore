@@ -3,4 +3,5 @@ node_modules/
 .vscode/
 *.log
 data/*.tmp
+data/news.json
 data/news.backup.json

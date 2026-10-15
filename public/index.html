@@ -186,22 +186,21 @@
           <option value="entertainment">تفریح</option>
           <option value="sports">کھیل</option>
           <option value="politics">سیاست</option>
-          <!-- <option value="showbiz">شوبز</option> -->
+          <option value="unique">منفرد اور حیرت انگیز</option>
         </select>
         <input type="text" id="searchInputUrdu" placeholder="خبر تلاش کریں...">
       </div>
     </div>
 
-    <!-- Category Icons Strip -->
     <div class="category-icons-strip">
       <button class="cat-icon-btn" data-cat="" data-lang="urdu"><i class="fas fa-globe"></i><span class="urdu">سب</span></button>
       <button class="cat-icon-btn" data-cat="politics" data-lang="urdu"><i class="fas fa-landmark"></i><span class="urdu">سیاست</span></button>
       <button class="cat-icon-btn" data-cat="business" data-lang="urdu"><i class="fas fa-chart-line"></i><span class="urdu">کاروبار</span></button>
       <button class="cat-icon-btn" data-cat="sports" data-lang="urdu"><i class="fas fa-futbol"></i><span class="urdu">کھیل</span></button>
-      <!-- <button class="cat-icon-btn" data-cat="showbiz" data-lang="urdu"><i class="fas fa-star"></i><span class="urdu">شوبز</span></button> -->
       <button class="cat-icon-btn" data-cat="technology" data-lang="urdu"><i class="fas fa-microchip"></i><span class="urdu">ٹیکنالوجی</span></button>
       <button class="cat-icon-btn" data-cat="entertainment" data-lang="urdu"><i class="fas fa-film"></i><span class="urdu">تفریح</span></button>
       <button class="cat-icon-btn" data-cat="general" data-lang="urdu"><i class="fas fa-newspaper"></i><span class="urdu">عام</span></button>
+      <button class="cat-icon-btn" data-cat="unique" data-lang="urdu"><i class="fas fa-wand-magic-sparkles"></i><span class="urdu">منفرد</span></button>
     </div>
 
     <div class="news-body">
@@ -229,22 +228,21 @@
           <option value="entertainment">Entertainment</option>
           <option value="sports">Sports</option>
           <option value="politics">Politics</option>
-          <!-- <option value="showbiz">Showbiz</option> -->
+          <option value="unique">Unique & Amazing</option>
         </select>
         <input type="text" id="searchInputEnglish" placeholder="Search news...">
       </div>
     </div>
 
-    <!-- Category Icons Strip -->
     <div class="category-icons-strip">
       <button class="cat-icon-btn active" data-cat="" data-lang="english"><i class="fas fa-globe"></i><span>All</span></button>
       <button class="cat-icon-btn" data-cat="politics" data-lang="english"><i class="fas fa-landmark"></i><span>Politics</span></button>
       <button class="cat-icon-btn" data-cat="business" data-lang="english"><i class="fas fa-chart-line"></i><span>Business</span></button>
       <button class="cat-icon-btn" data-cat="sports" data-lang="english"><i class="fas fa-futbol"></i><span>Sports</span></button>
-      <!-- <button class="cat-icon-btn" data-cat="showbiz" data-lang="english"><i class="fas fa-star"></i><span>Showbiz</span></button> -->
       <button class="cat-icon-btn" data-cat="technology" data-lang="english"><i class="fas fa-microchip"></i><span>Technology</span></button>
       <button class="cat-icon-btn" data-cat="entertainment" data-lang="english"><i class="fas fa-film"></i><span>Entertainment</span></button>
       <button class="cat-icon-btn" data-cat="general" data-lang="english"><i class="fas fa-newspaper"></i><span>General</span></button>
+      <button class="cat-icon-btn" data-cat="unique" data-lang="english"><i class="fas fa-wand-magic-sparkles"></i><span>Unique</span></button>
     </div>
 
     <div class="news-body">
@@ -304,7 +302,7 @@
     </div>
   </section>
 
-  <!-- THE REPORT FAMILY PAGE -->
+  <!-- THE REPORT FAMILY — Landing Page -->
   <section class="page" id="report-family">
     <div class="back-to-home">
       <button class="back-btn" data-nav="/">← Back to Home</button>
@@ -316,39 +314,61 @@
         <p>Meet the people behind the stories — our editorial team and valued contributors.</p>
       </div>
     </div>
-    <div class="family-section">
-      <div class="section-head">
-        <div class="k">EDITORIAL TEAM</div>
-        <h2>Official Authors</h2>
+    <div class="homepage-container" style="padding-top:20px;">
+      <div class="homepage-buttons">
+        <button class="homepage-btn" data-page="official-authors">
+          <span class="btn-icon">👔</span>
+          <span class="btn-title">Official Authors</span>
+          <span class="btn-desc">Editorial & In-House Team</span>
+        </button>
+        <button class="homepage-btn" data-page="guest-authors">
+          <span class="btn-icon">✍️</span>
+          <span class="btn-title">Guest Authors</span>
+          <span class="btn-desc">External Contributors & Columnists</span>
+        </button>
       </div>
-      <div class="author-grid">
-        <div class="author-card official">
-          <div class="author-avatar"><i class="fas fa-user-tie"></i></div>
-          <div class="author-badge">Official</div>
-          <h4>Editor-in-Chief</h4>
-          <p>Leading the editorial vision and strategy of The Report Network.</p>
-          <span class="author-articles">Articles: Coming Soon</span>
-        </div>
-        <div class="author-card official">
-          <div class="author-avatar"><i class="fas fa-user-tie"></i></div>
-          <div class="author-badge">Official</div>
-          <h4>Senior Editor</h4>
-          <p>Overseeing news coverage and ensuring journalistic standards.</p>
-          <span class="author-articles">Articles: Coming Soon</span>
-        </div>
-        <div class="author-card official">
-          <div class="author-avatar"><i class="fas fa-user-tie"></i></div>
-          <div class="author-badge">Official</div>
-          <h4>News Desk Lead</h4>
-          <p>Managing daily news operations and breaking news coverage.</p>
-          <span class="author-articles">Articles: Coming Soon</span>
-        </div>
-      </div>
+    </div>
+  </section>
 
-      <div class="section-head" style="margin-top:60px;">
-        <div class="k">CONTRIBUTORS</div>
-        <h2>Guest Authors</h2>
+  <!-- OFFICIAL AUTHORS PAGE -->
+  <section class="page" id="official-authors">
+    <div class="back-to-home">
+      <button class="back-btn" data-nav="/report-family">← Back to Report Family</button>
+    </div>
+    <div class="family-hero">
+      <div class="family-hero-content">
+        <i class="fas fa-user-tie family-hero-icon"></i>
+        <h1>Official Authors</h1>
+        <p>Editorial and in-house team members of The Report Network.</p>
       </div>
+    </div>
+    <div class="family-section">
+      <div class="author-grid">
+        <div class="author-card official author-card-large">
+          <div class="author-avatar-photo" onclick="document.getElementById('photoPopupImg').src=this.querySelector('img').src;document.getElementById('photoPopup').classList.add('open')"><img src="/assets/adeel-shah.png" alt="Syed Adeel Asghar Shah"></div>
+          <div class="author-badge">Official</div>
+          <h4>Syed Adeel Asghar Shah</h4>
+          <p class="author-qual">M.Phil English Literature</p>
+          <p>Researcher and Columnist. History Enthusiast. Studies Diplomacy, Security & Strategic Studies, International Relations.</p>
+          <span class="author-articles">Articles: Coming Soon</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- GUEST AUTHORS PAGE -->
+  <section class="page" id="guest-authors">
+    <div class="back-to-home">
+      <button class="back-btn" data-nav="/report-family">← Back to Report Family</button>
+    </div>
+    <div class="family-hero">
+      <div class="family-hero-content">
+        <i class="fas fa-pen-fancy family-hero-icon"></i>
+        <h1>Guest Authors</h1>
+        <p>External contributors and guest columnists.</p>
+      </div>
+    </div>
+    <div class="family-section">
       <div class="author-grid">
         <div class="author-card guest">
           <div class="author-avatar guest-av"><i class="fas fa-pen-fancy"></i></div>
@@ -469,6 +489,10 @@
     </div>
     <div id="articleSlot"><p class="loading-msg">Loading…</p></div>
   </section>
+  <!-- Photo Popup -->
+<div class="photo-popup-overlay" id="photoPopup" onclick="this.classList.remove('open')">
+  <img id="photoPopupImg" src="" alt="Full Photo">
+</div>
 
 </main>
 

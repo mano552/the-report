@@ -50,7 +50,7 @@ app.get("/news/:id", (req, res) => {
   res.type("html").send(html);
 });
 
-["/urdu", "/english", "/services", "/investigator", "/report-family", "/live", "/zarvity"].forEach((p) => app.get(p, (req, res) => res.sendFile(INDEX_HTML)));
+["/urdu", "/english", "/services", "/investigator", "/report-family", "/official-authors", "/guest-authors", "/live", "/zarvity"].forEach((p) => app.get(p, (req, res) => res.sendFile(INDEX_HTML)));
 
 // --- Admin panel route (without .html extension) ---
 app.get('/admin', (req, res) => {
