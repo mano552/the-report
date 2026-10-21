@@ -8,7 +8,7 @@ const { fetchFreshNews } = require("./newsAgent");
   console.log("Asking the AI agent for fresh Urdu + English news...");
   try {
     const items = await fetchFreshNews();
-    const added = db.addManyNews(items);
+    const added = await db.addManyNews(items);
     console.log(`Fetched ${items.length} stories, ${added.length} were new and saved.`);
     added.forEach((n) => console.log(" -", n.title));
     (items.notes || []).forEach((m) => console.log("note:", m));

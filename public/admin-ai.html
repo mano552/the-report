@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Agent Panel — THE REPORT</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Nastaliq+Urdu:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+<div class="admin-header">
+  <div class="header-content">
+    <a href="/" class="logo-section" style="text-decoration:none;color:inherit;">
+      <img src="/assets/logo.png" alt="The Report">
+      <div class="logo-text">
+        <h1>THE REPORT</h1>
+        <p>🤖 AI AGENT PANEL</p>
+      </div>
+    </a>
+    <div style="display:flex;gap:12px;align-items:center;">
+      <a href="/admin/manual" class="back-btn">✍️ Manual Panel</a>
+      <a href="/" class="back-btn">← Website</a>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Stats Overview -->
+  <div class="stats-grid" id="statsGrid">
+    <div class="stat-card">
+      <div class="stat-number" id="totalNews">0</div>
+      <div class="stat-label">Total News (all)</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number" id="aiNews">0</div>
+      <div class="stat-label">AI-Generated</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number" id="draftNews">0</div>
+      <div class="stat-label">Pending Drafts</div>
+    </div>
+  </div>
+
+  <!-- Admin Key -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon">🔐</div>
+      <h2>Authentication</h2>
+    </div>
+    <div class="form-group full">
+      <label>Admin Key <span class="required">*</span></label>
+      <input type="password" id="adminKey">
+    </div>
+  </div>
+
+  <!-- AI Agent Controls -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon">🤖</div>
+      <h2>Run AI News Agent</h2>
+    </div>
+    <p style="color:#5B6786;font-size:0.88rem;margin-bottom:16px;">
+      The agent pulls fresh Pakistan headlines, rewrites them in our own words with Gemini, and keeps
+      only stories that have a real source image. Newest-published headlines are picked first.
+      It also runs automatically on a schedule (see <code>NEWS_FETCH_CRON</code> in .env).
+    </p>
+    <div class="form-grid" style="margin-bottom:16px">
+      <div class="form-group">
+        <label>Language to Generate</label>
+        <select id="agentLang">
+          <option value="both">🌐 Both (Urdu + English)</option>
+          <option value="urdu">🇵🇰 Urdu Only</option>
+          <option value="english">🇬🇧 English Only</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Category Filter (optional)</label>
+        <select id="agentCategory">
+          <option value="">All Categories</option>
+          <option value="business">💼 Business</option>
+          <option value="technology">💻 Technology</option>
+          <option value="entertainment">🎬 Entertainment</option>
+          <option value="sports">⚽ Sports</option>
+          <option value="health">❤️ Health</option>
+          <option value="international">🌍 International</option>
+          <option value="unique">✨ Unique & Amazing</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Set News Date (optional)</label>
+        <input type="date" id="agentDate">
+      </div>
+    </div>
+    <button type="button" id="runAgentBtn">🤖 Run AI agent now</button>
+    <div id="agentStatus" style="margin-top:12px"></div>
+    <div id="statusMsg"></div>
+  </div>
+
+  <!-- News List (AI-generated, by default) -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon">📋</div>
+      <h2>AI-Generated Stories</h2>
+    </div>
+    <div class="form-grid" style="margin-bottom: 20px;">
+      <div class="form-group">
+        <label>Filter by Language</label>
+        <select id="filterLang">
+          <option value="">All Languages</option>
+          <option value="urdu">Urdu Only</option>
+          <option value="english">English Only</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Show</label>
+        <select id="showScope">
+          <option value="ai">🤖 AI-generated only</option>
+          <option value="all">Everything (AI + manual)</option>
+        </select>
+      </div>
+    </div>
+    <div id="newsList">Loading news...</div>
+  </div>
+</div>
+
+<script src="/js/admin-common.js"></script>
+<script>
+  const runBtn = document.getElementById('runAgentBtn');
+  const agentStatusEl = document.getElementById('agentStatus');
+  wireAgentRunner(runBtn, agentStatusEl);
+
+  function refresh() {
+    const scope = document.getElementById('showScope').value;
+    loadNewsList({
+      listEl: document.getElementById('newsList'),
+      totalEl: document.getElementById('totalNews'),
+      filterLangId: 'filterLang',
+      filterFn: scope === 'ai' ? (n => n.createdBy === 'ai-gemini') : null,
+      onAfterRender: (allAfterFilter) => {
+        const all = window.__allNews || [];
+        document.getElementById('aiNews').textContent = all.filter(n => n.createdBy === 'ai-gemini').length;
+        document.getElementById('draftNews').textContent = all.filter(n => n.status === 'draft').length;
+      },
+    });
+  }
+
+  document.getElementById('filterLang').addEventListener('change', refresh);
+  document.getElementById('showScope').addEventListener('change', refresh);
+  wireKeyReload(() => { refresh(); pollAgent(runBtn, agentStatusEl); });
+
+  refresh();
+  pollAgent(runBtn, agentStatusEl);
+</script>
+</body>
+</html>

@@ -8,13 +8,15 @@ const PAGE_FOR_PATH = {
   "/": "homepage", "/english": "news-english", "/urdu": "news-urdu",
   "/services": "services", "/investigator": "investigator",
   "/report-family": "report-family", "/official-authors": "official-authors",
-  "/guest-authors": "guest-authors", "/live": "live", "/zarvity": "zarvity"
+  "/guest-authors": "guest-authors", "/live": "live", "/zarvity": "zarvity",
+  "/about": "about-us"
 };
 const PATH_FOR_PAGE = {
   homepage: "/", "news-english": "/english", "news-urdu": "/urdu",
   services: "/services", investigator: "/investigator",
   "report-family": "/report-family", "official-authors": "/official-authors",
-  "guest-authors": "/guest-authors", live: "/live", zarvity: "/zarvity"
+  "guest-authors": "/guest-authors", live: "/live", zarvity: "/zarvity",
+  "about-us": "/about"
 };
 
 const LANG = {
@@ -164,11 +166,19 @@ function renderNews(lang) {
     return;
   }
 
-  const query = (document.getElementById(cfg.search)?.value || "").trim().toLowerCase();
+  // normalize() handles Urdu/Arabic text (diacritics, different Unicode forms
+  // of the same letter) so searching finds matches that a plain .includes()
+  // used to miss.
+  const query = normalizeSearchText(document.getElementById(cfg.search)?.value || "");
   const category = document.getElementById(cfg.filter)?.value || "";
+  // "trending" is not a real category — it's the `trending` flag the AI
+  // agent (or admin) sets on recent/hot stories. Everything else filters by
+  // the `category` field as before. No filter = "Latest" (newest-first, the
+  // default sort already applied by the API).
   const filtered = stories.filter((a) => {
-    const text = `${a.title} ${a.excerpt || ""}`.toLowerCase();
-    return (!query || text.includes(query)) && (!category || a.category === category);
+    const text = normalizeSearchText(`${a.title} ${a.excerpt || ""} ${a.body || ""}`);
+    const matchesCategory = !category || (category === "trending" ? Boolean(a.trending) : a.category === category);
+    return (!query || text.includes(query)) && matchesCategory;
   });
 
   if (filtered.length === 0) {
@@ -287,6 +297,18 @@ function mediaHtml(a, withVideo) {
   return imageHtml(a);
 }
 
+// Search fix: normalize text before matching so Urdu diacritics / different
+// Unicode representations of the same letter, plus extra spaces/case, don't
+// make an otherwise-correct search return "no results".
+function normalizeSearchText(str) {
+  return String(str || "")
+    .normalize("NFC")
+    .replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g, "") // strip Arabic/Urdu diacritics (zer/zabar/pesh etc.)
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
 function shorten(str, n) {
   const s = String(str || "");
   return s.length > n ? s.slice(0, n).trim() + "…" : s;
@@ -305,9 +327,9 @@ function safeUrl(url) {
 
 function getCategoryUrdu(category) {
   const categoryMap = {
-    general: "عام", business: "کاروبار", technology: "ٹیکنالوجی", entertainment: "تفریح",
+    business: "کاروبار", technology: "ٹیکنالوجی", entertainment: "تفریح",
     sports: "کھیل", science: "سائنس", health: "صحت", top: "اہم خبریں",
-    politics: "سیاست", showbiz: "شوبز", unique: "منفرد اور حیرت انگیز",
+    international: "انٹرنیشنل", trending: "ٹرینڈنگ", showbiz: "شوبز", unique: "منفرد اور حیرت انگیز",
   };
   return categoryMap[category] || "خبریں";
 }

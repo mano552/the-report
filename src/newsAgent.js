@@ -21,7 +21,11 @@ const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 // No external image APIs — source article image only
 
 // Categories used by the website filters and the admin panel.
-const ALLOWED_CATEGORIES = ["general", "business", "technology", "entertainment", "sports", "health", "science", "unique"];
+// "general" and "politics" were removed per site restructuring; "international"
+// was added. "Latest" and "Trending" are not categories — "Latest" is just the
+// default newest-first feed, and "Trending" is the separate `trending` flag
+// set automatically below (see markTrending).
+const ALLOWED_CATEGORIES = ["business", "technology", "entertainment", "sports", "health", "science", "international", "unique"];
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -65,7 +69,7 @@ function config() {
 async function fetchHeadlines(apiKey, language) {
   const url =
     `${NEWSDATA_URL}?apikey=${encodeURIComponent(apiKey)}` +
-    `&country=pk&language=${language}&category=top,business,technology,sports,entertainment`;
+    `&country=pk&language=${language}&category=top,business,technology,sports,entertainment,health,world`;
   report(`NewsData: fetching ${language === "ur" ? "Urdu" : "English"} headlines…`);
   let res;
   try {
@@ -298,7 +302,7 @@ async function processLanguage(cfg, language, knownUrls, errors, notes) {
   // If a category filter was requested, apply it
   let filtered = headlines;
   if (cfg.categoryFilter) {
-    const catMap = { general: "top", business: "business", technology: "technology", entertainment: "entertainment", sports: "sports", health: "health", science: "science" };
+    const catMap = { international: "world", business: "business", technology: "technology", entertainment: "entertainment", sports: "sports", health: "health", science: "science" };
     const ndCat = catMap[cfg.categoryFilter] || cfg.categoryFilter;
     filtered = headlines.filter((a) => {
       const cats = Array.isArray(a.category) ? a.category : [a.category];
@@ -306,8 +310,16 @@ async function processLanguage(cfg, language, knownUrls, errors, notes) {
     });
     if (filtered.length === 0) filtered = headlines; // fallback to all if filter returns nothing
   }
-  const fresh = filtered.filter((a) => !knownUrls.has(a.link)).slice(0, cfg.perLanguage);
-  report(`NewsData: ${headlines.length} ${language === "ur" ? "Urdu" : "English"} headline(s), ${fresh.length} new to rewrite.`);
+  // Recency: always rewrite the MOST RECENTLY PUBLISHED headlines first, not
+  // just whatever order the API returned. So if it's 8:26 PM and a headline
+  // was published at 8:00 PM, that is picked before an older one from
+  // yesterday, even if NewsData listed it lower.
+  const withTime = filtered
+    .filter((a) => !knownUrls.has(a.link))
+    .map((a) => ({ a, t: Date.parse(a.pubDate ? a.pubDate.replace(" ", "T") + "Z" : "") || 0 }))
+    .sort((x, y) => y.t - x.t);
+  const fresh = withTime.slice(0, cfg.perLanguage).map((x) => x.a);
+  report(`NewsData: ${headlines.length} ${language === "ur" ? "Urdu" : "English"} headline(s), ${fresh.length} new to rewrite (newest first).`);
   const records = [];
   if (fresh.length === 0) {
     notes.push(`${language}: NewsData returned ${headlines.length} headline(s), all already saved — nothing new right now.`);
@@ -319,17 +331,32 @@ async function processLanguage(cfg, language, knownUrls, errors, notes) {
       break;
     }
     try {
-      const ai = await callGemini(cfg, language, article);
+      // IMAGE REQUIRED: if the source article (NewsData) has no real image,
+      // skip this story entirely — the agent must not publish image-less
+      // news. We check this BEFORE calling Gemini so we don't waste the
+      // free Gemini quota rewriting a story we're about to throw away.
       const image = getSourceImage(article);
+      if (!image) {
+        notes.push(`Skipped (no image available): "${String(article.title).slice(0, 70)}"`);
+        report(`Skipped (no image from source): "${String(article.title).slice(0, 70)}"`);
+        knownUrls.add(article.link); // don't retry the same image-less story every run
+        continue;
+      }
+
+      const ai = await callGemini(cfg, language, article);
       const video = getSourceVideo(article);
       // Use the requested date or article's date
       const useDate = cfg.dateOverride || (article.pubDate || "").slice(0, 10) || new Date().toISOString().slice(0, 10);
+      // TRENDING: auto-flag very recent headlines (published within the last
+      // 3 hours of this run) so they show up under the site's "Trending" tab.
+      const pubMs = Date.parse(article.pubDate ? article.pubDate.replace(" ", "T") + "Z" : "") || 0;
+      const trending = pubMs > 0 && Date.now() - pubMs <= 3 * 60 * 60 * 1000;
       records.push({
         id: crypto.randomUUID(),
         title: String(ai.title).trim(),
         excerpt: String(ai.excerpt).trim(),
         body: String(ai.body || ai.excerpt).trim(),
-        category: ALLOWED_CATEGORIES.includes(String(ai.category).toLowerCase()) ? String(ai.category).toLowerCase() : "general",
+        category: ALLOWED_CATEGORIES.includes(String(ai.category).toLowerCase()) ? String(ai.category).toLowerCase() : "international",
         language: language === "ur" ? "urdu" : "english",
         date: useDate,
         sourceUrl: article.link,
@@ -337,11 +364,12 @@ async function processLanguage(cfg, language, knownUrls, errors, notes) {
         image,
         video,
         featured: false,
+        trending,
         status: cfg.status,
         createdBy: "ai-gemini",
       });
       knownUrls.add(article.link);
-      report(`Saved: "${String(ai.title).slice(0, 70)}"`);
+      report(`Saved: "${String(ai.title).slice(0, 70)}"${trending ? " 🔥 trending" : ""}`);
     } catch (err) {
       if (err instanceof FatalAgentError) throw err;
       errors.push(`${article.link}: ${err.message}`);

@@ -16,14 +16,16 @@
   <div class="header-inner">
     <div class="brand" data-nav="/" style="cursor:pointer;">
       <img src="/assets/logo.png" alt="The Report logo">
-      <div class="word"><b>THE REPORT</b><span>A MEDIA NETWORK</span></div>
+      <div class="word"><b>THE REPORT</b><span>A MEDIA NETWORK</span><span class="tagline">A Project of BM Enterprises</span></div>
     </div>
     <div class="header-nav">
       <button class="nav-btn investigator-btn" data-nav="/investigator"><i class="fas fa-magnifying-glass"></i> The Investigator</button>
       <button class="nav-btn family-btn" data-nav="/report-family"><i class="fas fa-users"></i> The Report Family</button>
+      <button class="nav-btn about-btn" data-nav="/about"><i class="fas fa-circle-info"></i> About Us</button>
       <button class="nav-btn live-btn" id="liveBtn" data-nav="/live"><span class="live-dot"></span> LIVE</button>
     </div>
     <div class="header-social">
+      <a href="https://wa.me/923054741419" target="_blank" rel="noopener" aria-label="WhatsApp" class="wa-link"><i class="fab fa-whatsapp"></i></a>
       <a href="https://www.facebook.com/share/19iTSSTkv6/" target="_blank" rel="noopener" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
       <a href="https://www.instagram.com/thereport.network" target="_blank" rel="noopener" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
       <a href="https://www.tiktok.com/@thereport.pk" target="_blank" rel="noopener" aria-label="TikTok"><i class="fab fa-tiktok"></i></a>
@@ -41,10 +43,12 @@
     <button class="mobile-nav-item" data-nav="/urdu"><i class="fas fa-newspaper"></i> اردو خبریں</button>
     <button class="mobile-nav-item" data-nav="/investigator"><i class="fas fa-magnifying-glass"></i> The Investigator</button>
     <button class="mobile-nav-item" data-nav="/report-family"><i class="fas fa-users"></i> The Report Family</button>
+    <button class="mobile-nav-item" data-nav="/about"><i class="fas fa-circle-info"></i> About Us</button>
     <button class="mobile-nav-item" data-nav="/live"><span class="live-dot"></span> LIVE</button>
     <button class="mobile-nav-item" data-nav="/services"><i class="fas fa-briefcase"></i> Services</button>
   </div>
   <div class="mobile-social">
+    <a href="https://wa.me/923054741419" target="_blank"><i class="fab fa-whatsapp"></i></a>
     <a href="https://www.facebook.com/share/19iTSSTkv6/" target="_blank"><i class="fab fa-facebook-f"></i></a>
     <a href="https://www.instagram.com/thereport.network" target="_blank"><i class="fab fa-instagram"></i></a>
     <a href="https://www.tiktok.com/@thereport.pk" target="_blank"><i class="fab fa-tiktok"></i></a>
@@ -169,6 +173,61 @@
     </div>
   </section>
 
+  <!-- ABOUT US PAGE -->
+  <section class="page" id="about-us">
+    <div class="back-to-home">
+      <button class="back-btn" data-nav="/">← Back to Home</button>
+    </div>
+    <div class="investigator-hero">
+      <div class="inv-hero-content">
+        <i class="fas fa-circle-info inv-hero-icon"></i>
+        <h1>About Us</h1>
+        <p>THE REPORT — A Project of BM Enterprises, registered in Lahore.</p>
+      </div>
+    </div>
+    <div class="inv-section">
+      <div class="section-head">
+        <div class="k">WHO WE ARE</div>
+        <h2>THE REPORT — A Media Network</h2>
+      </div>
+      <p style="max-width:760px;margin:0 auto 32px;color:#5B6786;line-height:1.8;font-size:1.05rem;">
+        THE REPORT is a Pakistani digital news platform — <strong>a project of BM Enterprises</strong>,
+        registered in Lahore, Pakistan. We publish fast, accurate Urdu &amp; English news covering
+        Pakistan and the world, with dedicated coverage for business, technology, sports,
+        entertainment, health and international affairs.
+      </p>
+
+      <div class="services-grid">
+        <div class="svc-card">
+          <div class="svc-num"><i class="fas fa-location-dot"></i></div>
+          <h3>Office Address</h3>
+          <p id="aboutAddress">Davis Hytes Plaza, Second Floor, Office#16, Opposite Attock Petroleum, Lahore, Pakistan, 54000</p>
+        </div>
+        <div class="svc-card">
+          <div class="svc-num"><i class="fab fa-whatsapp"></i></div>
+          <h3>WhatsApp</h3>
+          <p><a href="https://wa.me/923054741419" target="_blank" rel="noopener" style="color:#C2211D;font-weight:700;text-decoration:none;">+92 305 4741419</a></p>
+        </div>
+        <div class="svc-card">
+          <div class="svc-num"><i class="fas fa-envelope"></i></div>
+          <h3>Email</h3>
+          <p><a href="mailto:info@thereport.pk" style="color:#C2211D;font-weight:700;text-decoration:none;">info@thereport.pk</a></p>
+        </div>
+      </div>
+
+      <div class="section-head" style="margin-top:50px;">
+        <div class="k">FOLLOW US</div>
+        <h2>Connect With THE REPORT</h2>
+      </div>
+      <div class="footer-social-icons" style="justify-content:center;display:flex;gap:16px;">
+        <a href="https://wa.me/923054741419" target="_blank" aria-label="WhatsApp"><i class="fab fa-whatsapp"></i></a>
+        <a href="https://www.facebook.com/share/19iTSSTkv6/" target="_blank" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+        <a href="https://www.instagram.com/thereport.network" target="_blank" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+        <a href="https://www.tiktok.com/@thereport.pk" target="_blank" aria-label="TikTok"><i class="fab fa-tiktok"></i></a>
+      </div>
+    </div>
+  </section>
+
   <!-- URDU NEWS PAGE -->
   <section class="page" id="news-urdu">
     <div class="back-to-home">
@@ -179,13 +238,14 @@
       <p class="urdu">پاکستان اور دنیا کی تازہ ترین خبریں — سب ایک ہی جگہ پر</p>
       <div class="search-row">
         <select id="categoryFilterUrdu">
-          <option value="">تمام خبریں</option>
-          <option value="general">عام خبریں</option>
+          <option value="">تازہ ترین</option>
+          <option value="trending">ٹرینڈنگ</option>
+          <option value="international">انٹرنیشنل</option>
+          <option value="health">صحت</option>
           <option value="business">کاروبار</option>
           <option value="technology">ٹیکنالوجی</option>
           <option value="entertainment">تفریح</option>
           <option value="sports">کھیل</option>
-          <option value="politics">سیاست</option>
           <option value="unique">منفرد اور حیرت انگیز</option>
         </select>
         <input type="text" id="searchInputUrdu" placeholder="خبر تلاش کریں...">
@@ -193,13 +253,14 @@
     </div>
 
     <div class="category-icons-strip">
-      <button class="cat-icon-btn" data-cat="" data-lang="urdu"><i class="fas fa-globe"></i><span class="urdu">سب</span></button>
-      <button class="cat-icon-btn" data-cat="politics" data-lang="urdu"><i class="fas fa-landmark"></i><span class="urdu">سیاست</span></button>
+      <button class="cat-icon-btn active" data-cat="" data-lang="urdu"><i class="fas fa-bolt"></i><span class="urdu">تازہ ترین</span></button>
+      <button class="cat-icon-btn" data-cat="trending" data-lang="urdu"><i class="fas fa-fire"></i><span class="urdu">ٹرینڈنگ</span></button>
+      <button class="cat-icon-btn" data-cat="international" data-lang="urdu"><i class="fas fa-earth-asia"></i><span class="urdu">انٹرنیشنل</span></button>
+      <button class="cat-icon-btn" data-cat="health" data-lang="urdu"><i class="fas fa-heart-pulse"></i><span class="urdu">صحت</span></button>
       <button class="cat-icon-btn" data-cat="business" data-lang="urdu"><i class="fas fa-chart-line"></i><span class="urdu">کاروبار</span></button>
       <button class="cat-icon-btn" data-cat="sports" data-lang="urdu"><i class="fas fa-futbol"></i><span class="urdu">کھیل</span></button>
       <button class="cat-icon-btn" data-cat="technology" data-lang="urdu"><i class="fas fa-microchip"></i><span class="urdu">ٹیکنالوجی</span></button>
       <button class="cat-icon-btn" data-cat="entertainment" data-lang="urdu"><i class="fas fa-film"></i><span class="urdu">تفریح</span></button>
-      <button class="cat-icon-btn" data-cat="general" data-lang="urdu"><i class="fas fa-newspaper"></i><span class="urdu">عام</span></button>
       <button class="cat-icon-btn" data-cat="unique" data-lang="urdu"><i class="fas fa-wand-magic-sparkles"></i><span class="urdu">منفرد</span></button>
     </div>
 
@@ -221,13 +282,14 @@
       <p>Stay updated with the latest news from Pakistan and around the world</p>
       <div class="search-row">
         <select id="categoryFilterEnglish">
-          <option value="">All News</option>
-          <option value="general">General</option>
+          <option value="">Latest News</option>
+          <option value="trending">Trending</option>
+          <option value="international">International</option>
+          <option value="health">Health</option>
           <option value="business">Business</option>
           <option value="technology">Technology</option>
           <option value="entertainment">Entertainment</option>
           <option value="sports">Sports</option>
-          <option value="politics">Politics</option>
           <option value="unique">Unique & Amazing</option>
         </select>
         <input type="text" id="searchInputEnglish" placeholder="Search news...">
@@ -235,13 +297,14 @@
     </div>
 
     <div class="category-icons-strip">
-      <button class="cat-icon-btn active" data-cat="" data-lang="english"><i class="fas fa-globe"></i><span>All</span></button>
-      <button class="cat-icon-btn" data-cat="politics" data-lang="english"><i class="fas fa-landmark"></i><span>Politics</span></button>
+      <button class="cat-icon-btn active" data-cat="" data-lang="english"><i class="fas fa-bolt"></i><span>Latest</span></button>
+      <button class="cat-icon-btn" data-cat="trending" data-lang="english"><i class="fas fa-fire"></i><span>Trending</span></button>
+      <button class="cat-icon-btn" data-cat="international" data-lang="english"><i class="fas fa-earth-asia"></i><span>International</span></button>
+      <button class="cat-icon-btn" data-cat="health" data-lang="english"><i class="fas fa-heart-pulse"></i><span>Health</span></button>
       <button class="cat-icon-btn" data-cat="business" data-lang="english"><i class="fas fa-chart-line"></i><span>Business</span></button>
       <button class="cat-icon-btn" data-cat="sports" data-lang="english"><i class="fas fa-futbol"></i><span>Sports</span></button>
       <button class="cat-icon-btn" data-cat="technology" data-lang="english"><i class="fas fa-microchip"></i><span>Technology</span></button>
       <button class="cat-icon-btn" data-cat="entertainment" data-lang="english"><i class="fas fa-film"></i><span>Entertainment</span></button>
-      <button class="cat-icon-btn" data-cat="general" data-lang="english"><i class="fas fa-newspaper"></i><span>General</span></button>
       <button class="cat-icon-btn" data-cat="unique" data-lang="english"><i class="fas fa-wand-magic-sparkles"></i><span>Unique</span></button>
     </div>
 
@@ -502,9 +565,11 @@
       <div class="footer-brand">
         <div class="brand">
           <img src="/assets/logo.png" alt="The Report logo" style="width:36px;height:36px;">
-          <div class="word"><b>THE REPORT</b><span>A MEDIA NETWORK</span></div>
+          <div class="word"><b>THE REPORT</b><span>A MEDIA NETWORK</span><span class="tagline">A Project of BM Enterprises</span></div>
         </div>
-        <p>Professional services. Clear communication. Real results.</p>
+        <p>Registered in Lahore, Pakistan. Professional services. Clear communication. Real results.</p>
+        <p style="margin-top:10px;font-size:0.85rem;color:#8a93ad;"><i class="fab fa-whatsapp" style="color:#25D366;margin-right:6px;"></i><a href="https://wa.me/923054741419" target="_blank" style="color:inherit;text-decoration:none;">+92 305 4741419</a></p>
+        <p style="font-size:0.85rem;color:#8a93ad;"><i class="fas fa-envelope" style="margin-right:6px;"></i><a href="mailto:info@thereport.pk" style="color:inherit;text-decoration:none;">info@thereport.pk</a></p>
       </div>
       <div class="footer-links">
         <h4>Quick Links</h4>
@@ -512,11 +577,13 @@
         <a href="#" data-nav="/urdu">اردو خبریں</a>
         <a href="#" data-nav="/investigator">The Investigator</a>
         <a href="#" data-nav="/report-family">The Report Family</a>
+        <a href="#" data-nav="/about">About Us</a>
         <a href="#" data-nav="/services">Services</a>
       </div>
       <div class="footer-social-section">
         <h4>Follow Us</h4>
         <div class="footer-social-icons">
+          <a href="https://wa.me/923054741419" target="_blank" aria-label="WhatsApp"><i class="fab fa-whatsapp"></i></a>
           <a href="https://www.facebook.com/share/19iTSSTkv6/" target="_blank"><i class="fab fa-facebook-f"></i></a>
           <a href="https://www.instagram.com/thereport.network" target="_blank"><i class="fab fa-instagram"></i></a>
           <a href="https://www.tiktok.com/@thereport.pk" target="_blank"><i class="fab fa-tiktok"></i></a>
@@ -524,7 +591,7 @@
       </div>
     </div>
     <div class="footer-bottom">
-      <p>© 2026 The Report — A Media Network</p>
+      <p>© 2026 The Report — A Project of BM Enterprises</p>
       <p class="footer-credit">Powered by <a href="#" data-nav="/zarvity" class="zarvity-link"><strong>Zarvity Media</strong> <img src="/assets/zarvity-logo.png" alt="Zarvity Media" class="zarvity-footer-logo"></a></p>
     </div>
   </div>

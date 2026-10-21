@@ -31,8 +31,13 @@ const INDEX_HTML = path.join(__dirname, "public", "index.html");
 const escHtml = (s) =>
   String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
-app.get("/news/:id", (req, res) => {
-  const item = db.getNewsById(req.params.id);
+app.get("/news/:id", async (req, res) => {
+  let item = null;
+  try {
+    item = await db.getNewsById(req.params.id);
+  } catch (err) {
+    console.error("[/news/:id] db error:", err.message);
+  }
   let html = fs.readFileSync(INDEX_HTML, "utf-8");
   if (item && db.isPublished(item)) {
     const meta =
@@ -50,12 +55,17 @@ app.get("/news/:id", (req, res) => {
   res.type("html").send(html);
 });
 
-["/urdu", "/english", "/services", "/investigator", "/report-family", "/official-authors", "/guest-authors", "/live", "/zarvity"].forEach((p) => app.get(p, (req, res) => res.sendFile(INDEX_HTML)));
+["/urdu", "/english", "/services", "/investigator", "/report-family", "/official-authors", "/guest-authors", "/live", "/zarvity", "/about"].forEach((p) =>
+  app.get(p, (req, res) => res.sendFile(INDEX_HTML))
+);
 
-// --- Admin panel route (without .html extension) ---
-app.get('/admin', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
-});
+// --- Admin panel routes ---
+// /admin        -> a small chooser page (pick AI panel or Manual panel)
+// /admin/ai     -> AI AGENT panel only (run the agent, approve/manage AI drafts)
+// /admin/manual -> MANUAL panel only (add/edit/delete news by hand)
+app.get("/admin", (req, res) => res.sendFile(path.join(__dirname, "public", "admin.html")));
+app.get("/admin/ai", (req, res) => res.sendFile(path.join(__dirname, "public", "admin-ai.html")));
+app.get("/admin/manual", (req, res) => res.sendFile(path.join(__dirname, "public", "admin-manual.html")));
 
 app.listen(PORT, () => {
   console.log(`THE REPORT server running: http://localhost:${PORT}`);
@@ -80,17 +90,23 @@ if (!process.env.NEWSDATA_API_KEY || !process.env.GEMINI_API_KEY) {
   console.warn("NEWSDATA_API_KEY and/or GEMINI_API_KEY missing — the AI agent will fail until you add them (both free).");
 }
 if (!process.env.ADMIN_KEY) console.warn("ADMIN_KEY missing — the admin panel cannot log in.");
+if (!process.env.DATABASE_URL) console.warn("DATABASE_URL missing — see README.md > 'PostgreSQL setup' before the site will show/save news.");
 
 // --- Auto-fix: remove any pollinations.ai images on startup ---
-{
-  const allNews = db.getAllNewsIncludingDrafts();
-  const bad = allNews.filter(n => n.image && String(n.image).includes("pollinations.ai"));
-  if (bad.length > 0) {
-    console.log(`[startup] Removing ${bad.length} fake pollinations.ai images...`);
-    for (const n of bad) {
-      db.updateNews(n.id, { image: null });
-      console.log(`  ✅ Cleaned: "${n.title.slice(0, 50)}"`);
+(async () => {
+  try {
+    await db.ready();
+    const allNews = await db.getAllNewsIncludingDrafts();
+    const bad = allNews.filter((n) => n.image && String(n.image).includes("pollinations.ai"));
+    if (bad.length > 0) {
+      console.log(`[startup] Removing ${bad.length} fake pollinations.ai images...`);
+      for (const n of bad) {
+        await db.updateNews(n.id, { image: null });
+        console.log(`  ✅ Cleaned: "${n.title.slice(0, 50)}"`);
+      }
+      console.log("[startup] Done.");
     }
-    console.log("[startup] Done. Logo placeholder will show until new news is generated with real images.");
+  } catch (err) {
+    console.error("[startup] Database check failed:", err.message);
   }
-}
+})();

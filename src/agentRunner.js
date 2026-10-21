@@ -67,7 +67,7 @@ function startRun(trigger = "manual", options = {}) {
   (async () => {
     try {
       const items = await fetchFreshNews(progress, options);
-      const added = db.addManyNews(items);
+      const added = await db.addManyNews(items);
       Object.assign(state, {
         ok: true,
         fetched: items.length,

@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manual News Panel — THE REPORT</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Nastaliq+Urdu:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+<div class="admin-header">
+  <div class="header-content">
+    <a href="/" class="logo-section" style="text-decoration:none;color:inherit;">
+      <img src="/assets/logo.png" alt="The Report">
+      <div class="logo-text">
+        <h1>THE REPORT</h1>
+        <p>✍️ MANUAL NEWS PANEL</p>
+      </div>
+    </a>
+    <div style="display:flex;gap:12px;align-items:center;">
+      <a href="/admin/ai" class="back-btn">🤖 AI Agent Panel</a>
+      <a href="/" class="back-btn">← Website</a>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Stats Overview -->
+  <div class="stats-grid" id="statsGrid">
+    <div class="stat-card">
+      <div class="stat-number" id="totalNews">0</div>
+      <div class="stat-label">Total News</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number" id="urduNews">0</div>
+      <div class="stat-label">Urdu News</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number" id="englishNews">0</div>
+      <div class="stat-label">English News</div>
+    </div>
+  </div>
+
+  <!-- Admin Key -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon">🔐</div>
+      <h2>Authentication</h2>
+    </div>
+    <div class="form-group full">
+      <label>Admin Key <span class="required">*</span></label>
+      <input type="password" id="adminKey">
+    </div>
+  </div>
+
+  <!-- Add News Form -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon">➕</div>
+      <h2>Add News Story</h2>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Language <span class="required">*</span></label>
+        <select id="language">
+          <option value="urdu">🇵🇰 اردو (Urdu)</option>
+          <option value="english">🇬🇧 English</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Category <span class="required">*</span></label>
+        <select id="category">
+          <option value="business">💼 Business / کاروبار</option>
+          <option value="technology">💻 Technology / ٹیکنالوجی</option>
+          <option value="entertainment">🎬 Entertainment / تفریح</option>
+          <option value="sports">⚽ Sports / کھیل</option>
+          <option value="health">❤️ Health / صحت</option>
+          <option value="international">🌍 International / انٹرنیشنل</option>
+          <option value="unique">✨ Unique & Amazing / منفرد اور حیرت انگیز</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group full">
+      <label>Title <span class="required">*</span></label>
+      <input type="text" id="title" placeholder="Enter news title">
+    </div>
+
+    <div class="form-group full">
+      <label>Description / Excerpt <span class="required">*</span></label>
+      <textarea id="excerpt" placeholder="Enter news description (150-300 characters recommended)"></textarea>
+    </div>
+
+    <div class="form-group full">
+      <label>Full Story (optional — shown on the story page; blank = description is used)</label>
+      <textarea id="body" rows="8" placeholder="Write the full news story. Leave an empty line between paragraphs."></textarea>
+    </div>
+
+    <div class="form-group full">
+      <label>Source URL (optional)</label>
+      <input type="url" id="sourceUrl" placeholder="https://example.com/news-article">
+    </div>
+
+    <div class="form-group full">
+      <label>News Image <span class="required">*</span> <small style="font-weight:400;color:#5B6786;">(required — news without an image will not display well on the site)</small></label>
+      <div class="tab-buttons">
+        <button type="button" class="tab-btn active" data-tab="upload">📁 Upload from Gallery</button>
+        <button type="button" class="tab-btn" data-tab="url">🔗 Image URL</button>
+      </div>
+
+      <div id="upload-tab" class="tab-content active">
+        <div class="image-upload-section">
+          <p style="margin: 0 0 12px; color: #5B6786;">📤 Select an image from your device</p>
+          <input type="file" id="imageFile" accept="image/*">
+          <img id="imagePreview" class="image-preview" alt="Preview">
+        </div>
+      </div>
+
+      <div id="url-tab" class="tab-content">
+        <input type="url" id="imageUrl" placeholder="https://example.com/image.jpg">
+        <p style="font-size: 0.8rem; color: #5B6786; margin-top: 6px;">Enter direct image URL (must end with .jpg, .png, .webp, etc.)</p>
+        <img id="imagePreviewUrl" class="image-preview" alt="Preview">
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Date (optional)</label>
+        <input type="date" id="newsDate">
+      </div>
+      <div class="form-group">
+        <label>Publish immediately?</label>
+        <select id="publishNow">
+          <option value="published">✅ Publish now</option>
+          <option value="draft">📝 Save as draft</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group full">
+      <label><input type="checkbox" id="trendingCheck" style="width:auto;display:inline-block;margin-right:8px;">🔥 Mark as Trending</label>
+    </div>
+
+    <div style="margin-top: 24px;">
+      <button id="addBtn">✅ Add News Story</button>
+      <button type="button" class="secondary" id="resetBtn">🔄 Reset Form</button>
+    </div>
+    <div id="statusMsg"></div>
+  </div>
+
+  <!-- News List -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon">📋</div>
+      <h2>All News Stories</h2>
+    </div>
+    <div class="form-grid" style="margin-bottom: 20px;">
+      <div class="form-group">
+        <label>Filter by Language</label>
+        <select id="filterLang">
+          <option value="">All Languages</option>
+          <option value="urdu">Urdu Only</option>
+          <option value="english">English Only</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Filter by Category</label>
+        <select id="filterCategory">
+          <option value="">All Categories</option>
+          <option value="business">Business</option>
+          <option value="technology">Technology</option>
+          <option value="entertainment">Entertainment</option>
+          <option value="sports">Sports</option>
+          <option value="health">Health</option>
+          <option value="international">International</option>
+          <option value="unique">Unique & Amazing</option>
+        </select>
+      </div>
+    </div>
+    <div id="newsList">Loading news...</div>
+  </div>
+</div>
+
+<script src="/js/admin-common.js"></script>
+<script>
+  const imageFile = document.getElementById('imageFile');
+  const imagePreview = document.getElementById('imagePreview');
+  const imageUrl = document.getElementById('imageUrl');
+  const imagePreviewUrl = document.getElementById('imagePreviewUrl');
+  const languageSelect = document.getElementById('language');
+  const titleInput = document.getElementById('title');
+  const excerptInput = document.getElementById('excerpt');
+
+  // Tab switching for image upload
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.tab + '-tab').classList.add('active');
+    });
+  });
+
+  languageSelect.addEventListener('change', () => {
+    const urduOn = languageSelect.value === 'urdu';
+    [titleInput, excerptInput, document.getElementById('body')].forEach(el => el.classList.toggle('urdu-input', urduOn));
+  });
+
+  imageFile.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => { imagePreview.src = event.target.result; imagePreview.classList.add('show'); };
+      reader.readAsDataURL(file);
+    }
+  });
+
+  imageUrl.addEventListener('input', () => {
+    if (imageUrl.value) {
+      imagePreviewUrl.src = imageUrl.value;
+      imagePreviewUrl.classList.add('show');
+      imagePreviewUrl.onerror = () => imagePreviewUrl.classList.remove('show');
+    } else {
+      imagePreviewUrl.classList.remove('show');
+    }
+  });
+
+  function refresh() {
+    loadNewsList({
+      listEl: document.getElementById('newsList'),
+      totalEl: document.getElementById('totalNews'),
+      filterLangId: 'filterLang',
+      filterCatId: 'filterCategory',
+      onAfterRender: () => {
+        const all = window.__allNews || [];
+        document.getElementById('urduNews').textContent = all.filter(n => n.language === 'urdu').length;
+        document.getElementById('englishNews').textContent = all.filter(n => n.language === 'english').length;
+      },
+    });
+  }
+
+  document.getElementById('filterLang').addEventListener('change', refresh);
+  document.getElementById('filterCategory').addEventListener('change', refresh);
+  wireKeyReload(refresh);
+
+  document.getElementById('addBtn').addEventListener('click', async () => {
+    const title = document.getElementById('title').value.trim();
+    const excerpt = document.getElementById('excerpt').value.trim();
+    const storyBody = document.getElementById('body').value.trim();
+    const category = document.getElementById('category').value;
+    const language = document.getElementById('language').value;
+    const sourceUrl = document.getElementById('sourceUrl').value.trim();
+    const newsDate = document.getElementById('newsDate').value;
+    const status = document.getElementById('publishNow').value;
+    const trending = document.getElementById('trendingCheck').checked;
+
+    if (!title) return showStatus('❌ Please enter a title', 'error');
+    if (!excerpt) return showStatus('❌ Please enter a description', 'error');
+
+    let imageData = null;
+    const activeTab = document.querySelector('.tab-btn.active').dataset.tab;
+    if (activeTab === 'upload' && imageFile.files[0]) {
+      const reader = new FileReader();
+      imageData = await new Promise((resolve) => { reader.onload = (e) => resolve(e.target.result); reader.readAsDataURL(imageFile.files[0]); });
+    } else if (activeTab === 'url' && imageUrl.value) {
+      imageData = imageUrl.value;
+    }
+    if (!imageData) return showStatus('❌ Please add an image (upload or URL) — news without an image is not allowed.', 'error');
+
+    const body = {
+      title, excerpt, body: storyBody || excerpt, category, language,
+      sourceUrl: sourceUrl || null,
+      date: newsDate || new Date().toISOString().slice(0, 10),
+      image: imageData, featured: false, trending, status,
+    };
+
+    try {
+      const res = await fetch('/api/news', { method: 'POST', headers: headers(), body: JSON.stringify(body) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to add news');
+      showStatus('✅ News story added successfully!', 'success');
+      document.getElementById('resetBtn').click();
+      refresh();
+    } catch (err) {
+      showStatus('❌ Error: ' + err.message, 'error');
+    }
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    document.getElementById('title').value = '';
+    document.getElementById('excerpt').value = '';
+    document.getElementById('body').value = '';
+    document.getElementById('category').value = 'business';
+    document.getElementById('language').value = 'urdu';
+    document.getElementById('sourceUrl').value = '';
+    document.getElementById('newsDate').value = '';
+    document.getElementById('imageFile').value = '';
+    document.getElementById('imageUrl').value = '';
+    document.getElementById('trendingCheck').checked = false;
+    document.getElementById('publishNow').value = 'published';
+    imagePreview.classList.remove('show');
+    imagePreviewUrl.classList.remove('show');
+    titleInput.classList.add('urdu-input');
+    excerptInput.classList.add('urdu-input');
+  });
+
+  refresh();
+</script>
+</body>
+</html>
