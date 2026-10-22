@@ -66,11 +66,18 @@ function config() {
 
 // ---------- 1) Headlines from NewsData.io ----------
 
-async function fetchHeadlines(apiKey, language) {
+// NewsData.io allows a MAX of 5 values in the category parameter per
+// request, so our 7 wanted categories are split into two requests (≤5 each)
+// and the results are merged/de-duplicated below.
+const CATEGORY_BATCHES = [
+  ["top", "business", "technology", "sports", "entertainment"],
+  ["health", "world"],
+];
+
+async function fetchHeadlinesBatch(apiKey, language, categories) {
   const url =
     `${NEWSDATA_URL}?apikey=${encodeURIComponent(apiKey)}` +
-    `&country=pk&language=${language}&category=top,business,technology,sports,entertainment,health,world`;
-  report(`NewsData: fetching ${language === "ur" ? "Urdu" : "English"} headlines…`);
+    `&country=pk&language=${language}&category=${categories.join(",")}`;
   let res;
   try {
     res = await fetchWithTimeout(url, {}, 20000);
@@ -89,6 +96,21 @@ async function fetchHeadlines(apiKey, language) {
     throw new Error(`NewsData.io returned status "${data.status}": ${JSON.stringify(data.results || data).slice(0, 300)}`);
   }
   return (data.results || []).filter((a) => a.title && a.link);
+}
+
+async function fetchHeadlines(apiKey, language) {
+  report(`NewsData: fetching ${language === "ur" ? "Urdu" : "English"} headlines…`);
+  const seen = new Set();
+  const merged = [];
+  for (const categories of CATEGORY_BATCHES) {
+    const batch = await fetchHeadlinesBatch(apiKey, language, categories);
+    for (const article of batch) {
+      if (seen.has(article.link)) continue;
+      seen.add(article.link);
+      merged.push(article);
+    }
+  }
+  return merged;
 }
 
 // ---------- 2) Rewrite with Gemini ----------
@@ -400,7 +422,7 @@ async function fetchFreshNews(onProgress, options = {}) {
 
   await resolveModels(cfg);
 
-  const knownUrls = new Set(db.getAllNewsIncludingDrafts().map((n) => n.sourceUrl).filter(Boolean));
+  const knownUrls = new Set((await db.getAllNewsIncludingDrafts()).map((n) => n.sourceUrl).filter(Boolean));
   const errors = [];
   const notes = [];
   const all = [];

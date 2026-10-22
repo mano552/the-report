@@ -175,10 +175,17 @@ function renderNews(lang) {
   // agent (or admin) sets on recent/hot stories. Everything else filters by
   // the `category` field as before. No filter = "Latest" (newest-first, the
   // default sort already applied by the API).
+  // Match each typed word separately (AND match) instead of requiring the
+  // whole typed phrase to appear as one exact substring — so "پاکستان کرکٹ"
+  // still finds a story titled "کرکٹ بورڈ: پاکستان نے..." even though the
+  // words aren't in that exact order/position. A single-word search behaves
+  // exactly as before.
+  const queryWords = query.split(" ").filter(Boolean);
   const filtered = stories.filter((a) => {
     const text = normalizeSearchText(`${a.title} ${a.excerpt || ""} ${a.body || ""}`);
     const matchesCategory = !category || (category === "trending" ? Boolean(a.trending) : a.category === category);
-    return (!query || text.includes(query)) && matchesCategory;
+    const matchesSearch = queryWords.length === 0 || queryWords.every((w) => text.includes(w));
+    return matchesSearch && matchesCategory;
   });
 
   if (filtered.length === 0) {
@@ -304,6 +311,8 @@ function normalizeSearchText(str) {
   return String(str || "")
     .normalize("NFC")
     .replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g, "") // strip Arabic/Urdu diacritics (zer/zabar/pesh etc.)
+    .replace(/[\u200B-\u200F\uFEFF]/g, "") // strip zero-width joiner/non-joiner marks common in Urdu text
+    .replace(/[،۔,.!؟?]/g, " ") // punctuation shouldn't block a word match
     .replace(/\s+/g, " ")
     .trim()
     .toLowerCase();
@@ -367,7 +376,7 @@ if (contactForm) {
     const email = document.getElementById("contactEmail").value.trim();
     const phone = document.getElementById("contactPhone").value.trim();
     const message = document.getElementById("contactMessage").value.trim();
-    const whatsappNumber = "923054741419";
+    const whatsappNumber = "923158550842";
     const whatsappMessage = `*New Contact Form Submission*%0A%0A` +
       `*Name:* ${encodeURIComponent(name)}%0A` +
       `*Email:* ${encodeURIComponent(email)}%0A` +
