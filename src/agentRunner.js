@@ -10,7 +10,7 @@
 // so they can never run at the same time and burn the free API limits.
 
 const db = require("./db");
-const { fetchFreshNews } = require("./newsAgent");
+const { fetchFreshNews, withTimeout } = require("./newsAgent");
 
 const state = {
   running: false,
@@ -67,7 +67,8 @@ function startRun(trigger = "manual", options = {}) {
   (async () => {
     try {
       const items = await fetchFreshNews(progress, options);
-      const added = await db.addManyNews(items);
+      progress(`Saving ${items.length} new ${items.length === 1 ? "story" : "stories"} to the database…`);
+      const added = await withTimeout(db.addManyNews(items), 30000, "Saving to database");
       Object.assign(state, {
         ok: true,
         fetched: items.length,

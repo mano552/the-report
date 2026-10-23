@@ -29,14 +29,42 @@ const ALLOWED_CATEGORIES = ["business", "technology", "entertainment", "sports",
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// Same idea as fetchWithTimeout, but for any promise (used for database
+// calls too) — guarantees the agent never freezes forever on a slow/stuck
+// network, even for calls that aren't a plain fetch().
+function withTimeout(promise, ms, label) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error(`${label} timed out after ${ms / 1000}s — check your internet connection.`)), ms)),
+  ]);
+}
+
 // Every network call gets a time limit. Before, one stuck request (slow network,
 // Gemini hanging) kept the agent "working…" forever.
+//
+// This uses Promise.race with its OWN setTimeout/abort, instead of relying
+// only on AbortSignal.timeout(). Reason: on some Windows networks a DNS
+// lookup that never gets a response can hang well past the abort signal
+// (a known Node.js/undici limitation — abort() doesn't always interrupt a
+// stuck DNS resolution). Promise.race guarantees THIS FUNCTION returns/throws
+// on schedule regardless of what the underlying network call is doing, so
+// the agent can never again appear frozen for minutes with no error.
 async function fetchWithTimeout(url, opts = {}, ms = 30000) {
+  const controller = new AbortController();
+  let timer;
+  const timeoutPromise = new Promise((_, reject) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      reject(new Error(`timed out after ${ms / 1000}s (no response — check your internet connection)`));
+    }, ms);
+  });
   try {
-    return await fetch(url, { ...opts, signal: AbortSignal.timeout(ms) });
+    return await Promise.race([fetch(url, { ...opts, signal: controller.signal }), timeoutPromise]);
   } catch (err) {
     if (err.name === "TimeoutError" || err.name === "AbortError") throw new Error(`timed out after ${ms / 1000}s`);
     throw err;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -420,9 +448,12 @@ async function fetchFreshNews(onProgress, options = {}) {
   if (options.category) cfg.categoryFilter = options.category;
   if (options.date) cfg.dateOverride = options.date;
 
+  report("Checking which Gemini models are available…");
   await resolveModels(cfg);
 
-  const knownUrls = new Set((await db.getAllNewsIncludingDrafts()).map((n) => n.sourceUrl).filter(Boolean));
+  report("Checking the database for already-saved stories…");
+  const existing = await withTimeout(db.getAllNewsIncludingDrafts(), 20000, "Database query");
+  const knownUrls = new Set(existing.map((n) => n.sourceUrl).filter(Boolean));
   const errors = [];
   const notes = [];
   const all = [];
@@ -454,4 +485,4 @@ async function fetchFreshNews(onProgress, options = {}) {
 }
 
 // Old name kept so server.js / manualFetch.js / routes keep working.
-module.exports = { fetchFreshNews, fetchFreshUrduNews: fetchFreshNews, listFlashModels, rankModel };
+module.exports = { fetchFreshNews, fetchFreshUrduNews: fetchFreshNews, listFlashModels, rankModel, withTimeout };

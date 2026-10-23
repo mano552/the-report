@@ -76,6 +76,25 @@ function route() {
 
 window.addEventListener("popstate", route);
 
+// Category badge on a news card (e.g. "TECHNOLOGY", "INTERNATIONAL") — clicking
+// it filters the list to that category instead of opening the article. This
+// listener is registered with capture:true so it runs BEFORE the data-nav
+// listener below (which would otherwise open the article underneath it).
+document.addEventListener("click", (e) => {
+  const badge = e.target.closest(".news-category-badge");
+  if (!badge) return;
+  const cat = badge.dataset.cat;
+  if (!cat) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const lang = badge.closest("#news-urdu") ? "urdu" : "english";
+  const filterEl = document.getElementById(LANG[lang].filter);
+  if (filterEl) filterEl.value = cat;
+  document.querySelectorAll(`#${LANG[lang].page} .cat-icon-btn`).forEach((b) => b.classList.toggle("active", b.dataset.cat === cat));
+  if (cache[lang]) renderNews(lang);
+  document.getElementById(LANG[lang].page)?.scrollIntoView({ behavior: "smooth", block: "start" });
+}, true);
+
 // Any element with data-nav="/path" navigates inside the site.
 document.addEventListener("click", (e) => {
   const el = e.target.closest("[data-nav]");
@@ -101,7 +120,9 @@ document.getElementById("mobileMenuClose")?.addEventListener("click", () => {
 });
 
 // ================ Category Icon Buttons ================
-document.querySelectorAll(".cat-icon-btn").forEach((btn) => {
+// (.lang-switch-btn — the "English News"/"اردو خبریں" button at the end of the
+// strip — is excluded: it just navigates via data-nav, it's not a category.)
+document.querySelectorAll(".cat-icon-btn:not(.lang-switch-btn)").forEach((btn) => {
   btn.addEventListener("click", () => {
     const lang = btn.dataset.lang;
     const cat = btn.dataset.cat;
@@ -215,7 +236,7 @@ function renderNews(lang) {
     <div class="news-card-modern clickable" data-nav="${escapeAttr(link(a))}">
       <div class="news-image">
         ${imageHtml(a)}
-        <span class="news-category-badge">${escapeHtml(lang === "urdu" ? getCategoryUrdu(a.category) : a.category || "general")}</span>
+        <button type="button" class="news-category-badge" data-cat="${escapeAttr(a.category || "")}">${escapeHtml(lang === "urdu" ? getCategoryUrdu(a.category) : a.category || "general")}</button>
         ${a.video ? `<span class="news-video-badge">▶</span>` : ""}
       </div>
       <div class="news-content">

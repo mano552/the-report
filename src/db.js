@@ -17,8 +17,6 @@
 // Every function below is now ASYNC (returns a Promise) because talking to a
 // real database is a network call. Callers must `await` them.
 
-const { Pool } = require("pg");
-
 if (!process.env.DATABASE_URL) {
   console.warn(
     "[db] DATABASE_URL is missing in .env — the app cannot read/write news until it is set. " +
@@ -26,10 +24,31 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
+// Is this a Neon database? (hostname contains "neon.tech" / "neon.build" etc.)
+// Neon's own driver connects over a WebSocket on port 443 (the same port
+// normal HTTPS websites use) instead of the raw Postgres port 5432. Some
+// ISPs/office WiFi networks block 5432 outbound (even though the database
+// itself is fine — this is what caused the ETIMEDOUT error), so for Neon we
+// use their driver to avoid that entirely. For any other Postgres provider
+// (local Postgres, Render, Railway, Supabase, etc.) the standard "pg"
+// library over normal TCP is used, unchanged.
+const isNeon = /neon\.(tech|build)/i.test(process.env.DATABASE_URL || "");
+
+let Pool;
+if (isNeon) {
+  const neonServerless = require("@neondatabase/serverless");
+  neonServerless.neonConfig.webSocketConstructor = require("ws");
+  Pool = neonServerless.Pool;
+  console.log("[db] Neon database detected — using Neon's WebSocket driver (works even if port 5432 is blocked).");
+} else {
+  Pool = require("pg").Pool;
+}
+
 // Most managed Postgres providers (Render, Railway, Neon, Supabase...) require
 // SSL but use a self-signed/managed cert chain Node doesn't automatically
 // trust, so `rejectUnauthorized: false` is the standard setting for them.
 // Local Postgres (no DATABASE_URL, or PGSSLMODE=disable) does not need SSL.
+// (Neon's own driver handles SSL/WSS itself — this flag is ignored for it.)
 const needsSsl =
   process.env.DATABASE_URL &&
   process.env.PGSSLMODE !== "disable" &&
@@ -38,6 +57,10 @@ const needsSsl =
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: needsSsl ? { rejectUnauthorized: false } : false,
+  // Fail fast instead of hanging forever if the network can't reach the
+  // database (e.g. a flaky connection) — callers can then show a clear
+  // error and let the person retry, instead of the app looking frozen.
+  connectionTimeoutMillis: 15000,
 });
 
 pool.on("error", (err) => {
