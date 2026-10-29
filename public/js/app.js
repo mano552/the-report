@@ -61,6 +61,12 @@ function navigate(path, replace = false) {
 
 function route() {
   const path = location.pathname.replace(/\/+$/, "") || "/";
+  const am = path.match(/^\/author\/([^/]+)$/);
+  if (am) {
+    showPage("author-page");
+    loadAuthor(decodeURIComponent(am[1]));
+    return;
+  }
   const m = path.match(/^\/news\/([^/]+)$/);
   if (m) {
     showPage("article");
@@ -248,6 +254,65 @@ function renderNews(lang) {
         </div>
       </div>
     </div>`).join("");
+}
+
+
+// ================ Author profile page ================
+// Shows every published story (Urdu + English) whose `author` field matches.
+const AUTHORS = {
+  "adeel-shah": { name: "Syed Adeel Asghar Shah", photo: "/assets/adeel-shah.png", match: ["adeel"] },
+  "babar-aladdin": { name: "Brigadier Babar Ala-ud-Din, SI(M) (R)", photo: "/assets/babar-aladdin.png", match: ["babar"] },
+  "abdul-jabbar-bhatti": { name: "Abdul Jabbar Bhatti", photo: "/assets/abdul-jabbar-bhatti.png", match: ["jabbar", "bhatti"] },
+  "haider-munir": { name: "Haider Munir", photo: "/assets/haider-munir.jpg", match: ["haider", "munir"] },
+};
+
+function authorTime(a) {
+  const d = new Date(a.date);
+  if (!a.date || isNaN(d)) return displayDate(a);
+  const t = d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
+  const day = d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).replace(/(\w{3}) (\d{4})$/, "$1, $2");
+  return `${t}, ${day}`;
+}
+
+async function loadAuthor(slug) {
+  const head = document.getElementById("authorHead");
+  const list = document.getElementById("authorNewsList");
+  const au = AUTHORS[slug];
+  if (!au) {
+    head.innerHTML = "";
+    list.innerHTML = `<p class="loading-msg">Author not found.</p>`;
+    return;
+  }
+  document.title = `${au.name} — THE REPORT`;
+  head.innerHTML = `<img src="${escapeAttr(au.photo)}" alt="${escapeAttr(au.name)}"><h1>${escapeHtml(au.name)}</h1>`;
+  list.innerHTML = `<p class="loading-msg">Loading...</p>`;
+  try {
+    await getStories("urdu");
+    const mine = [...(cache.urdu || []), ...(cache.english || [])]
+      .filter((a) => {
+        const who = normalizeSearchText(a.author || a.authorName || a.byline || "");
+        return who && (who === slug || au.match.some((m) => who.includes(m)));
+      })
+      .sort((x, y) => new Date(y.date || 0) - new Date(x.date || 0));
+    if (mine.length === 0) {
+      list.innerHTML = `<p class="loading-msg">No articles published yet.</p>`;
+      return;
+    }
+    list.innerHTML = mine.map((a) => {
+      const ur = a.language === "urdu";
+      return `
+      <div class="author-news-item ${ur ? "rtl" : ""}" data-nav="/news/${encodeURIComponent(a.id)}">
+        ${imageHtml(a)}
+        <div>
+          <h3 class="${ur ? "urdu" : ""}">${escapeHtml(a.title)}</h3>
+          <div class="an-date" style="direction:ltr;text-align:${ur ? "right" : "left"}">${escapeHtml(authorTime(a))}</div>
+        </div>
+      </div>`;
+    }).join("");
+  } catch (err) {
+    console.error("Author page error:", err);
+    list.innerHTML = `<p class="loading-msg">Could not load articles. Please try again.</p>`;
+  }
 }
 
 // ================ Single story page ================

@@ -78,6 +78,11 @@
           <span class="btn-title">The Report Media Solutions</span>
           <span class="btn-desc">Our Professional Services</span>
         </button>
+        <button class="homepage-btn" data-page="report-family">
+          <span class="btn-icon">👥</span>
+          <span class="btn-title">The Report Family</span>
+          <span class="btn-desc">Our Authors &amp; Team</span>
+        </button>
       </div>
     </div>
   </section>
@@ -412,10 +417,30 @@
         <div class="author-card official author-card-large">
           <div class="author-avatar-photo" onclick="document.getElementById('photoPopupImg').src=this.querySelector('img').src;document.getElementById('photoPopup').classList.add('open')"><img src="/assets/adeel-shah.png" alt="Syed Adeel Asghar Shah"></div>
           <div class="author-badge">Official</div>
-          <h4>Syed Adeel Asghar Shah</h4>
+          <h4 data-nav="/author/adeel-shah" style="cursor:pointer">Syed Adeel Asghar Shah</h4>
           <p class="author-qual">M.Phil English Literature</p>
           <p>Researcher and Columnist. History Enthusiast. Studies Diplomacy, Security & Strategic Studies, International Relations.</p>
-          <span class="author-articles">Articles: Coming Soon</span>
+          <a class="author-articles" data-nav="/author/adeel-shah" href="/author/adeel-shah" style="cursor:pointer;text-decoration:underline">View Articles →</a>
+        </div>
+        <div class="author-card official author-card-large">
+          <div class="author-avatar-photo" onclick="document.getElementById('photoPopupImg').src=this.querySelector('img').src;document.getElementById('photoPopup').classList.add('open')"><img src="/assets/babar-aladdin.png" alt="Brigadier Babar Ala-ud-Din"></div>
+          <div class="author-badge">Official</div>
+          <h4 data-nav="/author/babar-aladdin" style="cursor:pointer">Brigadier Babar Ala-ud-Din, SI(M) (R)</h4>
+          <p>Brigadier Babar Ala-ud-Din, SI(M) (R) is a distinguished defence analyst, writer, columnist, motivational speaker, politician and philanthropist.</p>
+          <a class="author-articles" data-nav="/author/babar-aladdin" href="/author/babar-aladdin" style="cursor:pointer;text-decoration:underline">View Articles →</a>
+        </div>
+        <div class="author-card official author-card-large">
+          <div class="author-avatar-photo" onclick="document.getElementById('photoPopupImg').src=this.querySelector('img').src;document.getElementById('photoPopup').classList.add('open')"><img src="/assets/abdul-jabbar-bhatti.png" alt="Abdul Jabbar Bhatti"></div>
+          <div class="author-badge">Official</div>
+          <h4 data-nav="/author/abdul-jabbar-bhatti" style="cursor:pointer">Abdul Jabbar Bhatti</h4>
+          <p>Abdul Jabbar Bhatti is a professional with over 16 years of experience in the government sector and an academic background in Mass Communication.</p>
+          <a class="author-articles" data-nav="/author/abdul-jabbar-bhatti" href="/author/abdul-jabbar-bhatti" style="cursor:pointer;text-decoration:underline">View Articles →</a>
+        </div>
+        <div class="author-card official author-card-large">
+          <div class="author-avatar-photo" onclick="document.getElementById('photoPopupImg').src=this.querySelector('img').src;document.getElementById('photoPopup').classList.add('open')"><img src="/assets/haider-munir.jpg" alt="Haider Munir"></div>
+          <div class="author-badge">Official</div>
+          <h4 data-nav="/author/haider-munir" style="cursor:pointer">Haider Munir</h4>
+          <a class="author-articles" data-nav="/author/haider-munir" href="/author/haider-munir" style="cursor:pointer;text-decoration:underline">View Articles →</a>
         </div>
       </div>
     </div>
@@ -435,20 +460,7 @@
     </div>
     <div class="family-section">
       <div class="author-grid">
-        <div class="author-card guest author-card-large">
-          <div class="author-avatar-photo" onclick="document.getElementById('photoPopupImg').src=this.querySelector('img').src;document.getElementById('photoPopup').classList.add('open')"><img src="/assets/babar-aladdin.png" alt="Brigadier Babar Ala-ud-Din"></div>
-          <div class="author-badge guest-badge">Guest</div>
-          <h4>Brigadier Babar Ala-ud-Din, SI(M) (R)</h4>
-          <p>Brigadier Babar Ala-ud-Din, SI(M) (R) is a distinguished defence analyst, writer, columnist, motivational speaker, politician and philanthropist.</p>
-          <span class="author-articles">Articles: Coming Soon</span>
-        </div>
-        <div class="author-card guest author-card-large">
-          <div class="author-avatar-photo" onclick="document.getElementById('photoPopupImg').src=this.querySelector('img').src;document.getElementById('photoPopup').classList.add('open')"><img src="/assets/abdul-jabbar-bhatti.png" alt="Abdul Jabbar Bhatti"></div>
-          <div class="author-badge guest-badge">Guest</div>
-          <h4>Abdul Jabbar Bhatti</h4>
-          <p>Abdul Jabbar Bhatti is a professional with over 16 years of experience in the government sector and an academic background in Mass Communication.</p>
-          <span class="author-articles">Articles: Coming Soon</span>
-        </div>
+        <p style="text-align:center;color:#5B6786;padding:40px 0;">Guest authors coming soon.</p>
       </div>
     </div>
   </section>
@@ -548,6 +560,26 @@
   </section>
 
   <!-- SINGLE STORY PAGE -->
+  <section class="page" id="author-page">
+    <style>
+      .author-news-item{display:flex;gap:14px;align-items:flex-start;padding:16px 0;border-bottom:1px solid var(--line);cursor:pointer}
+      .author-news-item img{width:130px;height:90px;object-fit:cover;border-radius:6px;flex-shrink:0}
+      .author-news-item h3{margin:0 0 8px;font-size:1.05rem;line-height:1.7;color:var(--ink)}
+      .author-news-item .an-date{color:#666;font-size:.85rem}
+      .author-news-item.rtl{direction:rtl;text-align:right}
+      .author-head{text-align:center;padding:24px 0 8px}
+      .author-head img{width:110px;height:110px;border-radius:50%;object-fit:cover;border:4px solid var(--navy)}
+      .author-head h1{font-family:'Oswald';margin:12px 0 4px}
+    </style>
+    <div class="back-to-home">
+      <button class="back-btn" data-nav="/official-authors">← Back to Official Authors</button>
+    </div>
+    <div class="family-section">
+      <div class="author-head" id="authorHead"></div>
+      <div id="authorNewsList"></div>
+    </div>
+  </section>
+
   <section class="page" id="article">
     <div class="back-to-home">
       <button class="back-btn" id="articleBackBtn">← Back to News</button>
