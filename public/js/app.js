@@ -290,12 +290,13 @@ async function loadAuthor(slug) {
     await getStories("urdu");
     const mine = [...(cache.urdu || []), ...(cache.english || [])]
       .filter((a) => {
+        if (a.createdBy === "author:" + slug) return true; // posted from this author's own panel
         const who = normalizeSearchText(a.author || a.authorName || a.byline || "");
         return who && (who === slug || au.match.some((m) => who.includes(m)));
       })
       .sort((x, y) => new Date(y.date || 0) - new Date(x.date || 0));
     if (mine.length === 0) {
-      list.innerHTML = `<p class="loading-msg">No articles published yet.</p>`;
+      list.innerHTML = `<p class="loading-msg">No news at the moment.</p>`;
       return;
     }
     list.innerHTML = mine.map((a) => {

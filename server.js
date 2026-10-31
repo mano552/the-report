@@ -19,6 +19,7 @@ app.use(express.json({ limit: "15mb" }));
 
 // --- API ---
 app.use("/api/news", newsRoutes);
+app.use("/api/author", require("./src/routes/authorPanel")); // per-author panels
 
 // --- Static frontend (public/index.html, css, js, assets) ---
 app.use(express.static(path.join(__dirname, "public")));
@@ -59,6 +60,14 @@ app.get("/news/:id", async (req, res) => {
   app.get(p, (req, res) => res.sendFile(INDEX_HTML))
 );
 
+// --- Author profile pages (/author/haider-munir ...) open the normal site ---
+app.get("/author/:slug", (req, res) => res.sendFile(INDEX_HTML));
+
+// --- Separate panel for each author (own password, only their own news) ---
+["/haider", "/adeel", "/babar", "/jabbar"].forEach((p) =>
+  app.get(p, (req, res) => res.sendFile(path.join(__dirname, "public", "author-panel.html")))
+);
+
 // --- Admin panel routes ---
 // /admin        -> a small chooser page (pick AI panel or Manual panel)
 // /admin/ai     -> AI AGENT panel only (run the agent, approve/manage AI drafts)
@@ -90,6 +99,7 @@ if (!process.env.NEWSDATA_API_KEY || !process.env.GEMINI_API_KEY) {
   console.warn("NEWSDATA_API_KEY and/or GEMINI_API_KEY missing — the AI agent will fail until you add them (both free).");
 }
 if (!process.env.ADMIN_KEY) console.warn("ADMIN_KEY missing — the admin panel cannot log in.");
+["HAIDER","ADEEL","BABAR","JABBAR"].forEach((n) => { if (!process.env["AUTHOR_KEY_" + n]) console.warn("AUTHOR_KEY_" + n + " missing — that author panel cannot log in."); });
 if (!process.env.DATABASE_URL) console.warn("DATABASE_URL missing — see README.md > 'PostgreSQL setup' before the site will show/save news.");
 
 // --- Auto-fix: remove any pollinations.ai images on startup ---
