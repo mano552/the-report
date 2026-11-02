@@ -154,8 +154,12 @@ async function getStories(lang) {
   if (!res.ok) throw new Error("API error " + res.status);
   const data = await res.json();
   const all = data.news || [];
-  cache.urdu = all.filter((a) => a.language === "urdu");
-  cache.english = all.filter((a) => a.language === "english");
+  cache.all = all;
+  // Stories posted from an author's own panel show ONLY on that author's profile,
+  // not in the main Urdu / English news sections.
+  const site = all.filter((a) => !String(a.createdBy || "").startsWith("author:"));
+  cache.urdu = site.filter((a) => a.language === "urdu");
+  cache.english = site.filter((a) => a.language === "english");
   return cache[lang];
 }
 
@@ -288,28 +292,37 @@ async function loadAuthor(slug) {
   list.innerHTML = `<p class="loading-msg">Loading...</p>`;
   try {
     await getStories("urdu");
-    const mine = [...(cache.urdu || []), ...(cache.english || [])]
+    const mine = (cache.all || [])
       .filter((a) => {
         if (a.createdBy === "author:" + slug) return true; // posted from this author's own panel
         const who = normalizeSearchText(a.author || a.authorName || a.byline || "");
         return who && (who === slug || au.match.some((m) => who.includes(m)));
       })
       .sort((x, y) => new Date(y.date || 0) - new Date(x.date || 0));
-    if (mine.length === 0) {
-      list.innerHTML = `<p class="loading-msg">No news at the moment.</p>`;
-      return;
-    }
-    list.innerHTML = mine.map((a) => {
+    const card = (a) => {
       const ur = a.language === "urdu";
       return `
-      <div class="author-news-item ${ur ? "rtl" : ""}" data-nav="/news/${encodeURIComponent(a.id)}">
-        ${imageHtml(a)}
-        <div>
+      <div class="ap-card ${ur ? "rtl" : ""}" data-nav="/news/${encodeURIComponent(a.id)}">
+        <div class="ap-img">${imageHtml(a)}</div>
+        <div class="ap-body">
           <h3 class="${ur ? "urdu" : ""}">${escapeHtml(a.title)}</h3>
           <div class="an-date" style="direction:ltr;text-align:${ur ? "right" : "left"}">${escapeHtml(authorTime(a))}</div>
         </div>
       </div>`;
-    }).join("");
+    };
+    const section = (cls, title, items, empty) => `
+      <div class="ap-section ${cls}">
+        <div class="ap-section-head">
+          <h2 class="${cls === "ur" ? "urdu" : ""}">${title}</h2>
+          <span class="ap-count">${items.length}</span>
+        </div>
+        ${items.length ? `<div class="ap-grid">${items.map(card).join("")}</div>` : `<p class="ap-empty ${cls === "ur" ? "urdu" : ""}">${empty}</p>`}
+      </div>`;
+    const en = mine.filter((a) => a.language !== "urdu");
+    const ur = mine.filter((a) => a.language === "urdu");
+    list.innerHTML =
+      section("en", "English News", en, "No English news at the moment.") +
+      section("ur", "اردو خبریں", ur, "فی الحال کوئی خبر موجود نہیں");
   } catch (err) {
     console.error("Author page error:", err);
     list.innerHTML = `<p class="loading-msg">Could not load articles. Please try again.</p>`;
@@ -325,7 +338,7 @@ async function loadArticle(id) {
   slot.innerHTML = `<p class="loading-msg">Loading… / لوڈ ہو رہا ہے…</p>`;
 
   try {
-    let a = [...(cache.urdu || []), ...(cache.english || [])].find((x) => x.id === id);
+    let a = (cache.all || []).find((x) => x.id === id);
     if (!a) {
       const res = await fetch("/api/news/" + encodeURIComponent(id));
       if (res.status === 404) throw Object.assign(new Error("not found"), { notFound: true });

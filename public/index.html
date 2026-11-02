@@ -436,12 +436,6 @@
           <p>Abdul Jabbar Bhatti is a professional with over 16 years of experience in the government sector and an academic background in Mass Communication.</p>
           <a class="author-articles" data-nav="/author/abdul-jabbar-bhatti" href="/author/abdul-jabbar-bhatti" style="cursor:pointer;text-decoration:underline">View Articles →</a>
         </div>
-        <div class="author-card official author-card-large">
-          <div class="author-avatar-photo" onclick="document.getElementById('photoPopupImg').src=this.querySelector('img').src;document.getElementById('photoPopup').classList.add('open')"><img src="/assets/haider-munir.jpg" alt="Haider Munir"></div>
-          <div class="author-badge">Official</div>
-          <h4 data-nav="/author/haider-munir" style="cursor:pointer">Haider Munir</h4>
-          <a class="author-articles" data-nav="/author/haider-munir" href="/author/haider-munir" style="cursor:pointer;text-decoration:underline">View Articles →</a>
-        </div>
       </div>
     </div>
   </section>
@@ -562,11 +556,25 @@
   <!-- SINGLE STORY PAGE -->
   <section class="page" id="author-page">
     <style>
-      .author-news-item{display:flex;gap:14px;align-items:flex-start;padding:16px 0;border-bottom:1px solid var(--line);cursor:pointer}
-      .author-news-item img{width:130px;height:90px;object-fit:cover;border-radius:6px;flex-shrink:0}
-      .author-news-item h3{margin:0 0 8px;font-size:1.05rem;line-height:1.7;color:var(--ink)}
-      .author-news-item .an-date{color:#666;font-size:.85rem}
-      .author-news-item.rtl{direction:rtl;text-align:right}
+      .ap-section{margin:28px 0 36px}
+      .ap-section-head{display:flex;align-items:center;gap:12px;padding:12px 18px;border-radius:10px;color:#fff;margin-bottom:18px}
+      .ap-section.en .ap-section-head{background:linear-gradient(90deg,var(--navy-deep),var(--navy))}
+      .ap-section.ur .ap-section-head{background:linear-gradient(90deg,var(--red-deep),var(--red));flex-direction:row-reverse}
+      .ap-section-head h2{margin:0;font-family:'Oswald',sans-serif;font-size:1.3rem;letter-spacing:.5px;color:#fff}
+      .ap-section-head h2.urdu{font-family:'Noto Nastaliq Urdu',serif;line-height:1.9}
+      .ap-count{background:rgba(255,255,255,.2);border-radius:999px;padding:2px 12px;font-weight:700;font-size:.9rem}
+      .ap-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:18px}
+      .ap-card{background:var(--card);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);cursor:pointer;transition:transform .25s ease,box-shadow .25s ease;display:flex;flex-direction:column}
+      .ap-card:hover{transform:translateY(-6px);box-shadow:0 24px 48px -20px rgba(10,37,87,.45)}
+      .ap-img{aspect-ratio:16/10;background:var(--paper);overflow:hidden;display:flex;align-items:center;justify-content:center}
+      .ap-img img{width:100%;height:100%;object-fit:cover}
+      .ap-img .img-placeholder img{width:50%;height:auto;object-fit:contain;opacity:.6}
+      .ap-body{padding:14px 16px 16px}
+      .ap-body h3{margin:0 0 10px;font-size:1.02rem;line-height:1.6;color:var(--ink)}
+      .ap-body h3.urdu{line-height:2}
+      .ap-card.rtl{direction:rtl;text-align:right}
+      .an-date{color:var(--ink-soft);font-size:.82rem}
+      .ap-empty{background:var(--paper);border:1px dashed var(--line);border-radius:10px;padding:22px;text-align:center;color:var(--ink-soft)}
       .author-head{text-align:center;padding:24px 0 8px}
       .author-head img{width:110px;height:110px;border-radius:50%;object-fit:cover;border:4px solid var(--navy)}
       .author-head h1{font-family:'Oswald';margin:12px 0 4px}

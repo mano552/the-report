@@ -69,6 +69,13 @@ router.get("/news", requireAuthor, wrap(async (req, res) => {
   res.json({ news: all.filter((n) => n.createdBy === req.author.tag) });
 }));
 
+// Urdu/Arabic-script text -> "urdu", otherwise "english" (panel has no language option).
+function detectLanguage(text) {
+  const ar = (String(text).match(/[\u0600-\u06FF\u0750-\u077F]/g) || []).length;
+  const la = (String(text).match(/[A-Za-z]/g) || []).length;
+  return ar >= la ? "urdu" : "english";
+}
+
 router.post("/news", requireAuthor, wrap(async (req, res) => {
   const { title, excerpt, body, category, language, date, sourceUrl, image, video, status } = req.body || {};
   if (!title || !excerpt) return res.status(400).json({ error: "title and excerpt are required" });
@@ -78,7 +85,7 @@ router.post("/news", requireAuthor, wrap(async (req, res) => {
     excerpt,
     body: body || excerpt,
     category: category || "general",
-    language: language || "urdu",
+    language: language === "english" || language === "urdu" ? language : detectLanguage(`${title} ${excerpt} ${body || ""}`),
     date: date || new Date().toISOString().slice(0, 10),
     sourceUrl: sourceUrl || null,
     image: image || null,

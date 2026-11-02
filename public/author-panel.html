@@ -32,14 +32,6 @@
       <div class="stat-number" id="totalNews">0</div>
       <div class="stat-label">Total News</div>
     </div>
-    <div class="stat-card">
-      <div class="stat-number" id="urduNews">0</div>
-      <div class="stat-label">Urdu News</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-number" id="englishNews">0</div>
-      <div class="stat-label">English News</div>
-    </div>
   </div>
 
   <!-- Admin Key -->
@@ -63,25 +55,8 @@
     </div>
 
     <div class="form-grid">
-      <div class="form-group">
-        <label>Language <span class="required">*</span></label>
-        <select id="language">
-          <option value="urdu">🇵🇰 اردو (Urdu)</option>
-          <option value="english">🇬🇧 English</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Category <span class="required">*</span></label>
-        <select id="category">
-          <option value="business">💼 Business / کاروبار</option>
-          <option value="technology">💻 Technology / ٹیکنالوجی</option>
-          <option value="entertainment">🎬 Entertainment / تفریح</option>
-          <option value="sports">⚽ Sports / کھیل</option>
-          <option value="health">❤️ Health / صحت</option>
-          <option value="international">🌍 International / انٹرنیشنل</option>
-          <option value="unique">✨ Unique & Amazing / منفرد اور حیرت انگیز</option>
-        </select>
-      </div>
+      <input type="hidden" id="language" value="urdu">
+      <input type="hidden" id="category" value="general">
     </div>
 
     <div class="form-group full">
@@ -157,7 +132,7 @@
       <h2>My News Stories</h2>
     </div>
     <div class="form-grid" style="margin-bottom: 20px;">
-      <div class="form-group">
+      <div class="form-group" style="display:none">
         <label>Filter by Language</label>
         <select id="filterLang">
           <option value="">All Languages</option>
@@ -165,7 +140,7 @@
           <option value="english">English Only</option>
         </select>
       </div>
-      <div class="form-group">
+      <div class="form-group" style="display:none">
         <label>Filter by Category</label>
         <select id="filterCategory">
           <option value="">All Categories</option>
@@ -225,10 +200,22 @@ Storage.prototype.setItem = function (k, v) { return _si.call(this, _k(k), v); }
     });
   });
 
-  languageSelect.addEventListener('change', () => {
-    const urduOn = languageSelect.value === 'urdu';
-    [titleInput, excerptInput, document.getElementById('body')].forEach(el => el.classList.toggle('urdu-input', urduOn));
-  });
+  // Language is detected automatically from what is typed (Urdu script vs English).
+  // The story then shows in the matching section (English News / اردو خبریں) of your profile.
+  function detectLang(text) {
+    const ar = (text.match(/[\u0600-\u06FF\u0750-\u077F]/g) || []).length;
+    const la = (text.match(/[A-Za-z]/g) || []).length;
+    if (!ar && !la) return null;
+    return ar >= la ? 'urdu' : 'english';
+  }
+  const bodyInput = document.getElementById('body');
+  function autoLang() {
+    const lang = detectLang([titleInput.value, excerptInput.value, bodyInput.value].join(' '));
+    if (!lang) return;
+    languageSelect.value = lang;
+    [titleInput, excerptInput, bodyInput].forEach(el => el.classList.toggle('urdu-input', lang === 'urdu'));
+  }
+  [titleInput, excerptInput, bodyInput].forEach(el => el.addEventListener('input', autoLang));
 
   imageFile.addEventListener('change', (e) => {
     const file = e.target.files[0];
@@ -255,11 +242,7 @@ Storage.prototype.setItem = function (k, v) { return _si.call(this, _k(k), v); }
       totalEl: document.getElementById('totalNews'),
       filterLangId: 'filterLang',
       filterCatId: 'filterCategory',
-      onAfterRender: () => {
-        const all = window.__allNews || [];
-        document.getElementById('urduNews').textContent = all.filter(n => n.language === 'urdu').length;
-        document.getElementById('englishNews').textContent = all.filter(n => n.language === 'english').length;
-      },
+      onAfterRender: () => {},
     });
   }
 
@@ -272,6 +255,7 @@ Storage.prototype.setItem = function (k, v) { return _si.call(this, _k(k), v); }
     const excerpt = document.getElementById('excerpt').value.trim();
     const storyBody = document.getElementById('body').value.trim();
     const category = document.getElementById('category').value;
+    autoLang();
     const language = document.getElementById('language').value;
     const sourceUrl = document.getElementById('sourceUrl').value.trim();
     const newsDate = document.getElementById('newsDate').value;
@@ -314,7 +298,7 @@ Storage.prototype.setItem = function (k, v) { return _si.call(this, _k(k), v); }
     document.getElementById('title').value = '';
     document.getElementById('excerpt').value = '';
     document.getElementById('body').value = '';
-    document.getElementById('category').value = 'business';
+    document.getElementById('category').value = 'general';
     document.getElementById('language').value = 'urdu';
     document.getElementById('sourceUrl').value = '';
     document.getElementById('newsDate').value = '';
