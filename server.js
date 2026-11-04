@@ -1,3 +1,10 @@
+process.on('uncaughtException', (err) => {
+  console.error('[uncaught]', err && err.message);
+});
+process.on('unhandledRejection', (err) => {
+  console.error('[unhandled]', err && err.message);
+});
+
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
@@ -9,9 +16,14 @@ const db = require("./src/db");
 const { startRun } = require("./src/agentRunner");
 const fs = require("fs");
 
+const compression = require("compression");
+
+
 const app = express();
+app.set("trust proxy", 1); // behind Hostinger's proxy: correct client IP for the author-login rate limit
 const PORT = process.env.PORT || 3000;
 
+app.use(compression()); // gzip: JSON/HTML/CSS/JS become ~5-10x smaller on mobile data
 app.use(cors());
 // 15mb: the admin panel sends uploaded images as base64 inside JSON.
 // The default (100kb) rejected almost every photo with "413 Payload Too Large".
@@ -22,13 +34,24 @@ app.use("/api/news", newsRoutes);
 app.use("/api/author", require("./src/routes/authorPanel")); // per-author panels
 
 // --- Static frontend (public/index.html, css, js, assets) ---
-app.use(express.static(path.join(__dirname, "public")));
+app.use(
+  express.static(path.join(__dirname, "public"), {
+    etag: true,
+    setHeaders(res, filePath) {
+      // Images/logos rarely change: cache a week. CSS/JS/HTML: always revalidate
+      // (cheap 304) so a new deploy shows up immediately.
+      if (/[\\/]assets[\\/]/.test(filePath)) res.setHeader("Cache-Control", "public, max-age=604800");
+      else res.setHeader("Cache-Control", "no-cache");
+    },
+  })
+);
 
 // --- Story pages ON OUR SITE: /news/<id> ---
 // Serves the normal index.html, but with the story's title/description/image in
 // the <head> so WhatsApp/Facebook link previews look right. app.js then shows
 // the full story. Also /urdu, /english, /services open those sections directly.
 const INDEX_HTML = path.join(__dirname, "public", "index.html");
+const INDEX_HTML_TEXT = fs.readFileSync(INDEX_HTML, "utf-8"); // read once, not on every request
 const escHtml = (s) =>
   String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
@@ -39,7 +62,7 @@ app.get("/news/:id", async (req, res) => {
   } catch (err) {
     console.error("[/news/:id] db error:", err.message);
   }
-  let html = fs.readFileSync(INDEX_HTML, "utf-8");
+  let html = INDEX_HTML_TEXT;
   if (item && db.isPublished(item)) {
     const meta =
       `<meta property="og:type" content="article">\n` +

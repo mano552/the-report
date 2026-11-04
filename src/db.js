@@ -34,45 +34,47 @@ if (!process.env.DATABASE_URL) {
 // library over normal TCP is used, unchanged.
 const isNeon = /neon\.(tech|build)/i.test(process.env.DATABASE_URL || "");
 
-let Pool;
+let pool;
 if (isNeon) {
-  const neonServerless = require("@neondatabase/serverless");
-  neonServerless.neonConfig.webSocketConstructor = require("ws");
-  Pool = neonServerless.Pool;
-  console.log("[db] Neon database detected — using Neon's WebSocket driver (works even if port 5432 is blocked).");
+  // HTTPS driver (port 443): same cheez jo test-db.js mein chali thi.
+  const { neon } = require("@neondatabase/serverless");
+  const sql = neon(process.env.DATABASE_URL);
+  pool = {
+    async query(text, params) {
+      const res = await sql.query(text, params || [], { fullResults: true });
+      return { rows: res.rows, rowCount: res.rowCount };
+    },
+    on() {},
+  };
+  console.log("[db] Neon database detected — using Neon's HTTPS driver.");
 } else {
-  Pool = require("pg").Pool;
+  const { Pool } = require("pg");
+  const needsSsl =
+    process.env.DATABASE_URL &&
+    process.env.PGSSLMODE !== "disable" &&
+    !/localhost|127\.0\.0\.1/.test(process.env.DATABASE_URL);
+  pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: needsSsl ? { rejectUnauthorized: false } : false,
+    connectionTimeoutMillis: 15000,
+    max: 10,
+    idleTimeoutMillis: 30000,
+  });
+  pool.on("error", (err) => {
+    console.error("[db] Unexpected Postgres error on idle client:", err.message);
+  });
 }
-
-// Most managed Postgres providers (Render, Railway, Neon, Supabase...) require
-// SSL but use a self-signed/managed cert chain Node doesn't automatically
-// trust, so `rejectUnauthorized: false` is the standard setting for them.
-// Local Postgres (no DATABASE_URL, or PGSSLMODE=disable) does not need SSL.
-// (Neon's own driver handles SSL/WSS itself — this flag is ignored for it.)
-const needsSsl =
-  process.env.DATABASE_URL &&
-  process.env.PGSSLMODE !== "disable" &&
-  !/localhost|127\.0\.0\.1/.test(process.env.DATABASE_URL);
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: needsSsl ? { rejectUnauthorized: false } : false,
-  // Fail fast instead of hanging forever if the network can't reach the
-  // database (e.g. a flaky connection) — callers can then show a clear
-  // error and let the person retry, instead of the app looking frozen.
-  connectionTimeoutMillis: 15000,
-});
-
-pool.on("error", (err) => {
-  // A background/idle client error should not crash the whole server.
-  console.error("[db] Unexpected Postgres error on idle client:", err.message);
-});
 
 // ---------- schema ----------
 // Created automatically on first boot — no manual SQL needed.
 let readyPromise = null;
 function ready() {
-  if (!readyPromise) readyPromise = init();
+  if (!readyPromise) {
+    readyPromise = init().catch((err) => {
+      readyPromise = null; // next request dobara koshish karega
+      throw err;
+    });
+  }
   return readyPromise;
 }
 
@@ -102,6 +104,8 @@ async function init() {
   await pool.query(`CREATE INDEX IF NOT EXISTS news_date_idx ON news (date DESC);`);
   await pool.query(`CREATE INDEX IF NOT EXISTS news_status_idx ON news (status);`);
   await pool.query(`CREATE INDEX IF NOT EXISTS news_source_url_idx ON news (source_url);`);
+  // Speeds up the public paginated list (filter by language + status, newest first).
+  await pool.query(`CREATE INDEX IF NOT EXISTS news_lang_status_date_idx ON news (language, status, date DESC);`);
   console.log("[db] Connected to PostgreSQL. Table \"news\" is ready.");
 }
 
@@ -132,6 +136,11 @@ function rowToItem(r) {
 
 // Stories without a "status" (shouldn't happen with Postgres defaults, kept
 // for safety / old-data compatibility) count as published.
+// Bumped on every write so the in-memory list cache (routes/news.js) knows to refresh.
+let dataVersion = 0;
+const getVersion = () => dataVersion;
+const bump = () => { dataVersion++; };
+
 const isPublished = (n) => (n.status || "published") === "published";
 
 // Public site: published stories only, newest first.
@@ -141,6 +150,67 @@ async function getAllNews() {
     `SELECT * FROM news WHERE status = 'published' ORDER BY date DESC NULLS LAST, created_at DESC`
   );
   return rows.map(rowToItem);
+}
+
+// PUBLIC PAGINATED LIST — this is what the website uses.
+// Differences from getAllNews(): returns ONE page only, without the (large)
+// story body, with a trimmed excerpt, and never ships base64 images inside the
+// list (those are served separately from /api/news/:id/image and cached).
+async function getNewsPage({ language, category, q, author, limit = 20, offset = 0 } = {}) {
+  await ready();
+  limit = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
+  offset = Math.max(parseInt(offset, 10) || 0, 0);
+
+  const where = [`status = 'published'`];
+  const vals = [];
+  const add = (v) => { vals.push(v); return "$" + vals.length; };
+
+  if (language) where.push(`language = ${add(language)}`);
+  if (author) {
+    where.push(`created_by = ${add("author:" + author)}`);
+  } else {
+    // Stories posted from an author's own panel show only on that author's profile.
+    where.push(`(created_by IS NULL OR created_by NOT LIKE 'author:%')`);
+  }
+  if (category === "trending") where.push(`trending = TRUE`);
+  else if (category) where.push(`category = ${add(category)}`);
+
+  const words = String(q || "").trim().split(/\s+/).filter(Boolean).slice(0, 6);
+  for (const w of words) {
+    const p = add("%" + w.replace(/[\\%_]/g, "\\$&") + "%");
+    where.push(`(title ILIKE ${p} OR excerpt ILIKE ${p} OR body ILIKE ${p})`);
+  }
+
+  // Fetch one extra row so we know if there is a next page without a COUNT(*).
+  const limP = add(limit + 1);
+  const offP = add(offset);
+  const { rows } = await pool.query(
+    `SELECT id, title, left(excerpt, 400) AS excerpt, category, language, date,
+            source_url, source_name,
+            CASE WHEN image LIKE 'data:%' THEN NULL ELSE image END AS image,
+            (image LIKE 'data:%') AS image_inline,
+            video, featured, trending, status, created_by
+       FROM news
+      WHERE ${where.join(" AND ")}
+      ORDER BY date DESC NULLS LAST, created_at DESC
+      LIMIT ${limP} OFFSET ${offP}`,
+    vals
+  );
+  const hasMore = rows.length > limit;
+  const items = rows.slice(0, limit).map((r) => {
+    const it = rowToItem(r);
+    delete it.body;
+    if (r.image_inline) it.image = `/api/news/${encodeURIComponent(r.id)}/image`;
+    return it;
+  });
+  return { items, hasMore, offset, limit };
+}
+
+// Raw image column (used to serve base64 images as real, cacheable image files).
+async function getNewsImage(id) {
+  await ready();
+  const { rows } = await pool.query(`SELECT image, status FROM news WHERE id = $1`, [id]);
+  return rows[0] || null;
 }
 
 // Admin panel + duplicate checks: everything, including drafts.
@@ -180,55 +250,47 @@ async function addNews(item) {
       item.createdBy || "manual",
     ]
   );
+  bump();
   return rowToItem(rows[0]);
 }
 
 // Bulk-insert (used by the AI agent). Skips stories whose title or sourceUrl
 // already exists, same de-duplication rule as before.
+
 async function addManyNews(items) {
   await ready();
-  if (!items.length) return [];
-  const client = await pool.connect();
   const added = [];
-  try {
-    await client.query("BEGIN");
-    for (const item of items) {
-      const dupe = await client.query(
-        `SELECT 1 FROM news WHERE lower(title) = lower($1) OR (source_url IS NOT NULL AND source_url = $2) LIMIT 1`,
-        [item.title.trim(), item.sourceUrl || null]
-      );
-      if (dupe.rowCount > 0) continue;
-      const { rows } = await client.query(
-        `INSERT INTO news (id, title, excerpt, body, category, language, date, source_url, source_name, image, video, featured, trending, status, created_by)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
-         RETURNING *`,
-        [
-          item.id,
-          item.title,
-          item.excerpt,
-          item.body || item.excerpt,
-          item.category || "general",
-          item.language || "urdu",
-          item.date || new Date().toISOString().slice(0, 10),
-          item.sourceUrl || null,
-          item.sourceName || null,
-          item.image || null,
-          item.video || null,
-          Boolean(item.featured),
-          Boolean(item.trending),
-          item.status === "draft" ? "draft" : "published",
-          item.createdBy || "ai-gemini",
-        ]
-      );
-      added.push(rowToItem(rows[0]));
-    }
-    await client.query("COMMIT");
-  } catch (err) {
-    await client.query("ROLLBACK");
-    throw err;
-  } finally {
-    client.release();
+  for (const item of items) {
+    const dupe = await pool.query(
+      `SELECT 1 FROM news WHERE lower(title) = lower($1) OR (source_url IS NOT NULL AND source_url = $2) LIMIT 1`,
+      [item.title.trim(), item.sourceUrl || null]
+    );
+    if (dupe.rowCount > 0) continue;
+    const { rows } = await pool.query(
+      `INSERT INTO news (id, title, excerpt, body, category, language, date, source_url, source_name, image, video, featured, trending, status, created_by)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+       RETURNING *`,
+      [
+        item.id,
+        item.title,
+        item.excerpt,
+        item.body || item.excerpt,
+        item.category || "general",
+        item.language || "urdu",
+        item.date || new Date().toISOString().slice(0, 10),
+        item.sourceUrl || null,
+        item.sourceName || null,
+        item.image || null,
+        item.video || null,
+        Boolean(item.featured),
+        Boolean(item.trending),
+        item.status === "draft" ? "draft" : "published",
+        item.createdBy || "ai-gemini",
+      ]
+    );
+    added.push(rowToItem(rows[0]));
   }
+  if (added.length) bump();
   return added;
 }
 
@@ -252,12 +314,14 @@ async function updateNews(id, updates) {
   vals.push(id);
   const { rows } = await pool.query(`UPDATE news SET ${sets.join(", ")} WHERE id = $${i} RETURNING *`, vals);
   if (!rows[0]) return null;
+  bump();
   return rowToItem(rows[0]);
 }
 
 async function deleteNews(id) {
   await ready();
   const { rowCount } = await pool.query(`DELETE FROM news WHERE id = $1`, [id]);
+  if (rowCount > 0) bump();
   return rowCount > 0;
 }
 
@@ -265,6 +329,9 @@ module.exports = {
   ready,
   pool,
   getAllNews,
+  getNewsPage,
+  getNewsImage,
+  getVersion,
   getAllNewsIncludingDrafts,
   isPublished,
   getNewsById,

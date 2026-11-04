@@ -268,8 +268,7 @@ Storage.prototype.setItem = function (k, v) { return _si.call(this, _k(k), v); }
     let imageData = null;
     const activeTab = document.querySelector('.tab-btn.active').dataset.tab;
     if (activeTab === 'upload' && imageFile.files[0]) {
-      const reader = new FileReader();
-      imageData = await new Promise((resolve) => { reader.onload = (e) => resolve(e.target.result); reader.readAsDataURL(imageFile.files[0]); });
+      imageData = await compressImageFile(imageFile.files[0]);
     } else if (activeTab === 'url' && imageUrl.value) {
       imageData = imageUrl.value;
     }

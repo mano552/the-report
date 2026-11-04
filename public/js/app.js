@@ -26,7 +26,7 @@ const LANG = {
     t: {
       loading: "خبریں لوڈ ہو رہی ہیں...", none: "ابھی کوئی خبر شائع نہیں ہوئی۔ جلد حاضر ہوں گے۔",
       noMatch: "کوئی خبر نہیں ملی۔", error: "خبریں لوڈ نہیں ہو سکیں۔ دوبارہ کوشش کریں۔",
-      badge: "نمایاں خبر", readFull: "مکمل خبر پڑھیں ←", readMore: "مزید پڑھیں ←",
+      badge: "نمایاں خبر", loadMore: "مزید خبریں", readFull: "مکمل خبر پڑھیں ←", readMore: "مزید پڑھیں ←",
       back: "← خبروں پر واپس", source: "ماخذ", notFound: "یہ خبر موجود نہیں یا ہٹا دی گئی ہے۔",
     },
   },
@@ -36,13 +36,19 @@ const LANG = {
     t: {
       loading: "Loading news...", none: "No stories published yet. Please check back soon.",
       noMatch: "No news found.", error: "Could not load news. Please try again.",
-      badge: "FEATURED NEWS", readFull: "Read Full Story →", readMore: "Read More →",
+      badge: "FEATURED NEWS", loadMore: "Load more news", readFull: "Read Full Story →", readMore: "Read More →",
       back: "← Back to News", source: "Source", notFound: "This story does not exist or was removed.",
     },
   },
 };
 
-const cache = { urdu: null, english: null };
+// Per-language list state. Stories are loaded one page at a time from
+// /api/news?language=..&page=..  (server-side filter + search + pagination).
+const PAGE_SIZE = 12;
+const state = {
+  urdu: { items: [], page: 0, hasMore: false, loading: false, loaded: false, req: 0 },
+  english: { items: [], page: 0, hasMore: false, loading: false, loaded: false, req: 0 },
+};
 
 // ================ Router ================
 function showPage(id) {
@@ -97,7 +103,7 @@ document.addEventListener("click", (e) => {
   const filterEl = document.getElementById(LANG[lang].filter);
   if (filterEl) filterEl.value = cat;
   document.querySelectorAll(`#${LANG[lang].page} .cat-icon-btn`).forEach((b) => b.classList.toggle("active", b.dataset.cat === cat));
-  if (cache[lang]) renderNews(lang);
+  reloadNews(lang);
   document.getElementById(LANG[lang].page)?.scrollIntoView({ behavior: "smooth", block: "start" });
 }, true);
 
@@ -141,26 +147,25 @@ document.querySelectorAll(".cat-icon-btn:not(.lang-switch-btn)").forEach((btn) =
       const filterEl = document.getElementById(cfg.filter);
       if (filterEl) {
         filterEl.value = cat;
-        if (cache[lang]) renderNews(lang);
+        reloadNews(lang);
       }
     }
   });
 });
 
 // ================ Data ================
-async function getStories(lang) {
-  if (cache[lang]) return cache[lang];
-  const res = await fetch("/api/news");
+// Fetch ONE page of stories. Search + category are filtered on the server, so
+// the browser never downloads the whole archive.
+async function fetchPage(lang, page) {
+  const cfg = LANG[lang];
+  const params = new URLSearchParams({ language: lang, page: String(page), limit: String(PAGE_SIZE) });
+  const category = document.getElementById(cfg.filter)?.value || "";
+  const q = normalizeSearchText(document.getElementById(cfg.search)?.value || "");
+  if (category) params.set("category", category);
+  if (q) params.set("q", q);
+  const res = await fetch("/api/news?" + params.toString());
   if (!res.ok) throw new Error("API error " + res.status);
-  const data = await res.json();
-  const all = data.news || [];
-  cache.all = all;
-  // Stories posted from an author's own panel show ONLY on that author's profile,
-  // not in the main Urdu / English news sections.
-  const site = all.filter((a) => !String(a.createdBy || "").startsWith("author:"));
-  cache.urdu = site.filter((a) => a.language === "urdu");
-  cache.english = site.filter((a) => a.language === "english");
-  return cache[lang];
+  return res.json();
 }
 
 function displayDate(article) {
@@ -171,17 +176,68 @@ function displayDate(article) {
 }
 
 // ================ News list pages ================
+function loadMoreEl(lang) {
+  let el = document.getElementById("loadMore-" + lang);
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "loadMore-" + lang;
+    el.className = "load-more-wrap";
+    document.getElementById(LANG[lang].list).after(el);
+  }
+  return el;
+}
+
+// First open of a page: load page 1 (later visits reuse what is already shown).
 async function loadNews(lang) {
+  if (state[lang].loaded) return renderNews(lang);
+  return reloadNews(lang);
+}
+
+// Start again from page 1 (used for first load, search and category changes).
+async function reloadNews(lang) {
   const cfg = LANG[lang];
+  const st = state[lang];
+  const reqId = ++st.req;
   const featuredSlot = document.getElementById(cfg.featured);
-  if (!cache[lang]) featuredSlot.innerHTML = `<p class="${lang === "urdu" ? "urdu " : ""}loading-msg">${cfg.t.loading}</p>`;
+  const u = lang === "urdu" ? "urdu " : "";
+  featuredSlot.innerHTML = `<p class="${u}loading-msg">${cfg.t.loading}</p>`;
+  document.getElementById(cfg.list).innerHTML = "";
+  loadMoreEl(lang).innerHTML = "";
+  st.loading = true;
   try {
-    await getStories(lang);
+    const data = await fetchPage(lang, 1);
+    if (reqId !== st.req) return; // a newer search/filter replaced this request
+    st.items = data.news || [];
+    st.page = 1;
+    st.hasMore = Boolean(data.hasMore);
+    st.loaded = true;
+    st.loading = false;
     renderNews(lang);
   } catch (err) {
+    if (reqId !== st.req) return;
+    st.loading = false;
     console.error(lang + " news loading error:", err);
-    featuredSlot.innerHTML = `<p class="${lang === "urdu" ? "urdu " : ""}loading-msg">${cfg.t.error}</p>`;
+    featuredSlot.innerHTML = `<p class="${u}loading-msg">${cfg.t.error}</p>`;
   }
+}
+
+async function loadMoreNews(lang) {
+  const st = state[lang];
+  if (st.loading || !st.hasMore) return;
+  const reqId = st.req;
+  st.loading = true;
+  renderNews(lang);
+  try {
+    const data = await fetchPage(lang, st.page + 1);
+    if (reqId !== st.req) return;
+    st.items = st.items.concat(data.news || []);
+    st.page += 1;
+    st.hasMore = Boolean(data.hasMore);
+  } catch (err) {
+    console.error(lang + " load more error:", err);
+  }
+  st.loading = false;
+  renderNews(lang);
 }
 
 function renderNews(lang) {
@@ -189,39 +245,14 @@ function renderNews(lang) {
   const u = lang === "urdu" ? "urdu" : "";
   const featuredSlot = document.getElementById(cfg.featured);
   const listSlot = document.getElementById(cfg.list);
-  const stories = cache[lang] || [];
-
-  if (stories.length === 0) {
-    featuredSlot.innerHTML = `<p class="${u} loading-msg">${cfg.t.none}</p>`;
-    listSlot.innerHTML = "";
-    return;
-  }
-
-  // normalize() handles Urdu/Arabic text (diacritics, different Unicode forms
-  // of the same letter) so searching finds matches that a plain .includes()
-  // used to miss.
-  const query = normalizeSearchText(document.getElementById(cfg.search)?.value || "");
-  const category = document.getElementById(cfg.filter)?.value || "";
-  // "trending" is not a real category — it's the `trending` flag the AI
-  // agent (or admin) sets on recent/hot stories. Everything else filters by
-  // the `category` field as before. No filter = "Latest" (newest-first, the
-  // default sort already applied by the API).
-  // Match each typed word separately (AND match) instead of requiring the
-  // whole typed phrase to appear as one exact substring — so "پاکستان کرکٹ"
-  // still finds a story titled "کرکٹ بورڈ: پاکستان نے..." even though the
-  // words aren't in that exact order/position. A single-word search behaves
-  // exactly as before.
-  const queryWords = query.split(" ").filter(Boolean);
-  const filtered = stories.filter((a) => {
-    const text = normalizeSearchText(`${a.title} ${a.excerpt || ""} ${a.body || ""}`);
-    const matchesCategory = !category || (category === "trending" ? Boolean(a.trending) : a.category === category);
-    const matchesSearch = queryWords.length === 0 || queryWords.every((w) => text.includes(w));
-    return matchesSearch && matchesCategory;
-  });
+  const st = state[lang];
+  const filtered = st.items;
+  const hasFilter = Boolean(document.getElementById(cfg.search)?.value.trim() || document.getElementById(cfg.filter)?.value);
 
   if (filtered.length === 0) {
-    featuredSlot.innerHTML = `<p class="${u} loading-msg">${cfg.t.noMatch}</p>`;
+    featuredSlot.innerHTML = `<p class="${u} loading-msg">${hasFilter ? cfg.t.noMatch : cfg.t.none}</p>`;
     listSlot.innerHTML = "";
+    loadMoreEl(lang).innerHTML = "";
     return;
   }
 
@@ -258,15 +289,21 @@ function renderNews(lang) {
         </div>
       </div>
     </div>`).join("");
+
+  const more = loadMoreEl(lang);
+  more.innerHTML = st.hasMore
+    ? `<button type="button" class="load-more-btn ${u}" ${st.loading ? "disabled" : ""}>${st.loading ? cfg.t.loading : cfg.t.loadMore}</button>`
+    : "";
+  more.querySelector("button")?.addEventListener("click", () => loadMoreNews(lang));
 }
 
 
 // ================ Author profile page ================
 // Shows every published story (Urdu + English) whose `author` field matches.
 const AUTHORS = {
-  "adeel-shah": { name: "Syed Adeel Asghar Shah", photo: "/assets/adeel-shah.png", match: ["adeel"] },
-  "babar-aladdin": { name: "Brigadier Babar Ala-ud-Din, SI(M) (R)", photo: "/assets/babar-aladdin.png", match: ["babar"] },
-  "abdul-jabbar-bhatti": { name: "Abdul Jabbar Bhatti", photo: "/assets/abdul-jabbar-bhatti.png", match: ["jabbar", "bhatti"] },
+  "adeel-shah": { name: "Syed Adeel Asghar Shah", photo: "/assets/adeel-shah.jpg", match: ["adeel"] },
+  "babar-aladdin": { name: "Brigadier Babar Ala-ud-Din, SI(M) (R)", photo: "/assets/babar-aladdin.jpg", match: ["babar"] },
+  "abdul-jabbar-bhatti": { name: "Abdul Jabbar Bhatti", photo: "/assets/abdul-jabbar-bhatti.jpg", match: ["jabbar", "bhatti"] },
   "haider-munir": { name: "Haider Munir", photo: "/assets/haider-munir.jpg", match: ["haider", "munir"] },
 };
 
@@ -291,14 +328,9 @@ async function loadAuthor(slug) {
   head.innerHTML = `<img src="${escapeAttr(au.photo)}" alt="${escapeAttr(au.name)}"><h1>${escapeHtml(au.name)}</h1>`;
   list.innerHTML = `<p class="loading-msg">Loading...</p>`;
   try {
-    await getStories("urdu");
-    const mine = (cache.all || [])
-      .filter((a) => {
-        if (a.createdBy === "author:" + slug) return true; // posted from this author's own panel
-        const who = normalizeSearchText(a.author || a.authorName || a.byline || "");
-        return who && (who === slug || au.match.some((m) => who.includes(m)));
-      })
-      .sort((x, y) => new Date(y.date || 0) - new Date(x.date || 0));
+    const resp = await fetch("/api/news?author=" + encodeURIComponent(slug) + "&limit=100");
+    if (!resp.ok) throw new Error("API error " + resp.status);
+    const mine = ((await resp.json()).news || []).sort((x, y) => new Date(y.date || 0) - new Date(x.date || 0));
     const card = (a) => {
       const ur = a.language === "urdu";
       return `
@@ -338,13 +370,11 @@ async function loadArticle(id) {
   slot.innerHTML = `<p class="loading-msg">Loading… / لوڈ ہو رہا ہے…</p>`;
 
   try {
-    let a = (cache.all || []).find((x) => x.id === id);
-    if (!a) {
-      const res = await fetch("/api/news/" + encodeURIComponent(id));
-      if (res.status === 404) throw Object.assign(new Error("not found"), { notFound: true });
-      if (!res.ok) throw new Error("API error " + res.status);
-      a = await res.json();
-    }
+    // The list only carries a short excerpt, so fetch the full story here.
+    const res = await fetch("/api/news/" + encodeURIComponent(id));
+    if (res.status === 404) throw Object.assign(new Error("not found"), { notFound: true });
+    if (!res.ok) throw new Error("API error " + res.status);
+    const a = await res.json();
 
     const cfg = LANG[a.language] || LANG.english;
     const u = a.language === "urdu" ? "urdu" : "";
@@ -448,11 +478,15 @@ function escapeHtml(str) {
 }
 const escapeAttr = escapeHtml;
 
-// Search + category filter
+// Search + category filter (server-side; search waits 400ms after typing stops)
 ["urdu", "english"].forEach((lang) => {
-  document.getElementById(LANG[lang].search)?.addEventListener("input", () => cache[lang] && renderNews(lang));
+  let timer;
+  document.getElementById(LANG[lang].search)?.addEventListener("input", () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => reloadNews(lang), 400);
+  });
   document.getElementById(LANG[lang].filter)?.addEventListener("change", () => {
-    if (cache[lang]) renderNews(lang);
+    reloadNews(lang);
     // Sync category icon buttons
     const cat = document.getElementById(LANG[lang].filter)?.value || "";
     const strip = document.getElementById(lang === "urdu" ? "news-urdu" : "news-english")?.querySelector(".category-icons-strip");

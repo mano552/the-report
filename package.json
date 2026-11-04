@@ -15,12 +15,13 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.2.0",
+    "compression": "^1.8.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "node-cron": "^3.0.3",
     "pg": "^8.13.1",
-    "@neondatabase/serverless": "^0.10.4",
-    "ws": "^8.18.0"
+    "ws": "^8.22.1"
   }
 }

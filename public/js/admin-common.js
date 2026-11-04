@@ -243,3 +243,31 @@ function wireKeyReload(onChange) {
   keyInput.addEventListener('change', fire);
   keyInput.addEventListener('input', () => { clearTimeout(window.__kt); window.__kt = setTimeout(fire, 600); });
 }
+
+
+// Shrinks an uploaded photo BEFORE it is sent/stored: max 1280px wide, JPEG 80%.
+// A 3-5 MB phone photo becomes ~100-250 KB, which keeps the database and the
+// public news pages fast. Falls back to the original file if anything fails.
+function compressImageFile(file, maxW = 1280, quality = 0.8) {
+  return new Promise((resolve) => {
+    const fallback = () => { const r = new FileReader(); r.onload = (e) => resolve(e.target.result); r.readAsDataURL(file); };
+    if (!/^image\/(png|jpe?g|webp)$/i.test(file.type)) return fallback();
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const scale = Math.min(1, maxW / img.width);
+        const c = document.createElement('canvas');
+        c.width = Math.round(img.width * scale);
+        c.height = Math.round(img.height * scale);
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+        ctx.drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        resolve(c.toDataURL('image/jpeg', quality));
+      } catch (e) { URL.revokeObjectURL(url); fallback(); }
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); fallback(); };
+    img.src = url;
+  });
+}

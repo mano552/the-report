@@ -604,3 +604,8 @@ footer { position: relative; z-index: 1; background: var(--navy-deep); color: #C
 .photo-popup-overlay img { max-width: 90vw; max-height: 90vh; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); object-fit: contain; }
 .author-avatar-photo { cursor: pointer; transition: transform 0.3s ease; }
 .author-avatar-photo:hover { transform: scale(1.08); }
+/* "Load more" button under the news lists */
+.load-more-wrap { text-align: center; padding: 24px 0 8px; }
+.load-more-btn { background: #c8102e; color: #fff; border: 0; border-radius: 999px; padding: 12px 32px; font-size: 1rem; font-weight: 600; cursor: pointer; }
+.load-more-btn:hover:not(:disabled) { filter: brightness(1.1); }
+.load-more-btn:disabled { opacity: .6; cursor: wait; }

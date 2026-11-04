@@ -153,3 +153,16 @@ npm run check-keys       # agent stuck/failing? tests both API keys and prints t
    deploy anymore.
 3. Run `npm run migrate-db` once against the SAME `DATABASE_URL` (from either localhost or the
    server, doesn't matter — it's the same database) to bring in any pre-existing stories.
+
+---
+
+## Speed update (pagination + cache)
+
+- `/api/news` is now paginated: `?language=urdu&page=1&limit=12&category=sports&q=words`.
+  Lists no longer contain the story body; the full story loads from `/api/news/:id`.
+- The News pages load 12 stories and have a **Load more** button; search/category are done on the server.
+- gzip compression, 30s server cache (auto-cleared when news changes), browser caching for images.
+- Base64 images are served from `/api/news/:id/image` (cacheable). New uploads are compressed
+  in the browser (max 1280px, JPEG) before saving.
+- Admin panels are unchanged (they still get the full list incl. drafts with the admin key).
+- After pulling this update run `npm install` (new dependency: `compression`).

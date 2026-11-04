@@ -29,11 +29,55 @@ const wrap = (fn) => (req, res) => Promise.resolve(fn(req, res)).catch((err) => 
   res.status(500).json({ error: "Database error: " + err.message });
 });
 
-// GET /api/news  — public, used by the website's News page
-// Visitors only get PUBLISHED stories. The admin panel sends x-admin-key and
-// gets drafts too.
+// ---------- tiny in-memory cache for the public list ----------
+// Same page requested by many visitors = ONE database query per 30 seconds.
+// Any write (add/edit/delete/agent run) bumps db.getVersion(), which empties it.
+const listCache = new Map();
+const LIST_TTL_MS = 30 * 1000;
+let listCacheVersion = -1;
+function cacheGet(key) {
+  if (listCacheVersion !== db.getVersion()) { listCache.clear(); listCacheVersion = db.getVersion(); }
+  const hit = listCache.get(key);
+  return hit && Date.now() - hit.t < LIST_TTL_MS ? hit.v : null;
+}
+function cacheSet(key, v) {
+  if (listCache.size > 300) listCache.clear();
+  listCache.set(key, { t: Date.now(), v });
+}
+
+// GET /api/news  — public, used by the website's News pages (PAGINATED)
+//   ?language=urdu|english  &category=sports|trending|...  &q=search words
+//   &author=<profile-slug>  &limit=20 (max 100)  &page=1
+// Returns { news: [...], page, limit, hasMore }. List items have NO "body".
+//
+// The admin panels call this WITHOUT "limit"/"page" but WITH x-admin-key and
+// still receive the full list incl. drafts, exactly as before.
 router.get("/", wrap(async (req, res) => {
-  res.json({ news: isAdmin(req) ? await db.getAllNewsIncludingDrafts() : await db.getAllNews() });
+  const wantsPaging = "limit" in req.query || "page" in req.query || "language" in req.query;
+  if (isAdmin(req) && !wantsPaging) {
+    res.set("Cache-Control", "no-store");
+    return res.json({ news: await db.getAllNewsIncludingDrafts() });
+  }
+
+  const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 100);
+  const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+  const params = {
+    language: ["urdu", "english"].includes(req.query.language) ? req.query.language : undefined,
+    category: req.query.category ? String(req.query.category).slice(0, 40) : undefined,
+    q: req.query.q ? String(req.query.q).slice(0, 100) : undefined,
+    author: req.query.author ? String(req.query.author).slice(0, 60) : undefined,
+    limit,
+    offset: (page - 1) * limit,
+  };
+  const key = JSON.stringify(params);
+  let out = cacheGet(key);
+  if (!out) {
+    const r = await db.getNewsPage(params);
+    out = { news: r.items, page, limit, hasMore: r.hasMore };
+    cacheSet(key, out);
+  }
+  res.set("Cache-Control", "public, max-age=30, stale-while-revalidate=120");
+  res.json(out);
 }));
 
 // --- AI agent (admin only) ---
@@ -55,10 +99,27 @@ router.get("/fetch/status", requireAdmin, (req, res) => {
   res.json(getStatus());
 });
 
+// GET /api/news/:id/image — serves a base64 image stored in the database as a
+// real image file, so the browser can cache it (and the list stays small).
+router.get("/:id/image", wrap(async (req, res) => {
+  const row = await db.getNewsImage(req.params.id);
+  const m = row && /^data:(image\/(?:png|jpe?g|webp|gif));base64,(.+)$/s.exec(row.image || "");
+  if (!m || ((row.status || "published") !== "published" && !isAdmin(req))) return res.status(404).end();
+  res.set("Content-Type", m[1]);
+  res.set("Cache-Control", "public, max-age=604800, immutable");
+  res.send(Buffer.from(m[2], "base64"));
+}));
+
 // GET /api/news/:id
 router.get("/:id", wrap(async (req, res) => {
   const item = await db.getNewsById(req.params.id);
   if (!item || (!db.isPublished(item) && !isAdmin(req))) return res.status(404).json({ error: "Not found" });
+  // Public visitors get inline (base64) images as a cacheable URL; the admin
+  // edit form still gets the raw value so saving never corrupts the image.
+  if (!isAdmin(req) && typeof item.image === "string" && item.image.startsWith("data:")) {
+    item.image = `/api/news/${encodeURIComponent(item.id)}/image`;
+  }
+  res.set("Cache-Control", isAdmin(req) ? "no-store" : "public, max-age=30, stale-while-revalidate=120");
   res.json(item);
 }));
 
