@@ -55,7 +55,7 @@ async function loadNewsList({ listEl, totalEl, filterLangId, filterCatId, filter
 
     listEl.innerHTML = allNews.map(n => `
       <div class="news-row">
-        ${n.image ? `<img src="${escHtml(n.image)}" alt="" onerror="this.style.display='none'">` : '<div style="width:80px;height:80px;background:linear-gradient(135deg, #0A2557, #123166);border-radius:12px;"></div>'}
+        ${n.image ? `<img src="${escHtml(n.image)}" alt="" loading="lazy" decoding="async" width="80" height="80" onerror="this.style.display='none'">` : '<div style="width:80px;height:80px;background:linear-gradient(135deg, #0A2557, #123166);border-radius:12px;"></div>'}
         <div class="news-info">
           <div class="news-title ${n.language === 'urdu' ? 'urdu' : ''}">${escHtml(n.title)}</div>
           <div class="${n.language === 'urdu' ? 'urdu' : ''}" style="font-size:0.85rem;color:#5B6786;margin:4px 0">${escHtml((n.excerpt || '').slice(0, 160))}</div>
@@ -195,12 +195,16 @@ async function pollAgent(runBtn, agentStatusEl) {
     const res = await fetch('/api/news/fetch/status', { headers: headers() });
     if (!res.ok) return;
     const st = await res.json();
+    const wasRunning = runBtn.disabled && runBtn.textContent.includes('working');
     renderAgent(st, agentStatusEl);
     if (st.running) {
       runBtn.disabled = true; runBtn.textContent = '⏳ Agent is working...';
       pollTimer = setTimeout(() => pollAgent(runBtn, agentStatusEl), 3000);
     } else {
-      if (runBtn.disabled) loadNewsList(lastListCtx); // just finished → show new drafts
+      if (wasRunning && lastListCtx) {
+        // Agent just finished → refresh the news list to show new drafts
+        await loadNewsList(lastListCtx);
+      }
       runBtn.disabled = false; runBtn.textContent = '🤖 Run AI agent now';
     }
   } catch (e) {
@@ -227,7 +231,8 @@ function wireAgentRunner(runBtn, agentStatusEl) {
       try { data = await res.json(); } catch { throw new Error('Server returned ' + res.status + ' (not JSON). Is the Node app running?'); }
       if (res.status === 401) throw new Error('Wrong admin key.');
       if (!res.ok && res.status !== 409) throw new Error(data.error || ('Failed (' + res.status + ')'));
-      pollAgent(runBtn, agentStatusEl);
+      // Start polling immediately after successful start
+      setTimeout(() => pollAgent(runBtn, agentStatusEl), 500);
     } catch (err) {
       showStatus('❌ ' + err.message, 'error');
       runBtn.disabled = false; runBtn.textContent = '🤖 Run AI agent now';

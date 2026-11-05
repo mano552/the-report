@@ -68,7 +68,7 @@ function startRun(trigger = "manual", options = {}) {
     try {
       const items = await fetchFreshNews(progress, options);
       progress(`Saving ${items.length} new ${items.length === 1 ? "story" : "stories"} to the database…`);
-      const added = await withTimeout(db.addManyNews(items), 30000, "Saving to database");
+      const added = await withTimeout(db.addManyNews(items), 90000, "Saving to database");
       Object.assign(state, {
         ok: true,
         fetched: items.length,

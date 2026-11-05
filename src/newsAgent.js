@@ -452,7 +452,7 @@ async function fetchFreshNews(onProgress, options = {}) {
   await resolveModels(cfg);
 
   report("Checking the database for already-saved stories…");
-  const existing = await withTimeout(db.getAllNewsIncludingDrafts(), 20000, "Database query");
+  const existing = await withTimeout(db.getKnownSources(), 60000, "Database query");
   const knownUrls = new Set(existing.map((n) => n.sourceUrl).filter(Boolean));
   const errors = [];
   const notes = [];

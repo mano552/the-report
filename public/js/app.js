@@ -301,9 +301,9 @@ function renderNews(lang) {
 // ================ Author profile page ================
 // Shows every published story (Urdu + English) whose `author` field matches.
 const AUTHORS = {
-  "adeel-shah": { name: "Syed Adeel Asghar Shah", photo: "/assets/adeel-shah.jpg", match: ["adeel"] },
-  "babar-aladdin": { name: "Brigadier Babar Ala-ud-Din, SI(M) (R)", photo: "/assets/babar-aladdin.jpg", match: ["babar"] },
-  "abdul-jabbar-bhatti": { name: "Abdul Jabbar Bhatti", photo: "/assets/abdul-jabbar-bhatti.jpg", match: ["jabbar", "bhatti"] },
+  "adeel-shah": { name: "Syed Adeel Asghar Shah", photo: "/assets/adeel-shah.png", match: ["adeel"] },
+  "babar-aladdin": { name: "Brigadier Babar Ala-ud-Din, SI(M) (R)", photo: "/assets/babar-aladdin.png", match: ["babar"] },
+  "abdul-jabbar-bhatti": { name: "Abdul Jabbar Bhatti", photo: "/assets/abdul-jabbar-bhatti.png", match: ["jabbar", "bhatti"] },
   "haider-munir": { name: "Haider Munir", photo: "/assets/haider-munir.jpg", match: ["haider", "munir"] },
 };
 
@@ -353,8 +353,8 @@ async function loadAuthor(slug) {
     const en = mine.filter((a) => a.language !== "urdu");
     const ur = mine.filter((a) => a.language === "urdu");
     list.innerHTML =
-      section("en", "English News", en, "No English news at the moment.") +
-      section("ur", "اردو خبریں", ur, "فی الحال کوئی خبر موجود نہیں");
+  section("en", "English", en, "No English news at the moment.") +
+  section("ur", "اردو", ur, "فی الحال کوئی خبر موجود نہیں");
   } catch (err) {
     console.error("Author page error:", err);
     list.innerHTML = `<p class="loading-msg">Could not load articles. Please try again.</p>`;

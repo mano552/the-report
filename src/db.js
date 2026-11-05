@@ -38,11 +38,34 @@ let pool;
 if (isNeon) {
   // HTTPS driver (port 443): same cheez jo test-db.js mein chali thi.
   const { neon } = require("@neondatabase/serverless");
-  const sql = neon(process.env.DATABASE_URL);
+  const sql = neon(process.env.DATABASE_URL, {
+    fetchOptions: {
+      cache: 'no-store'
+    }
+  });
+  const isTransient = (e) =>
+    /terminated|fetch failed|ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|UND_ERR|timeout|socket/i.test(
+      String((e && e.message) || "") + String((e && e.cause && e.cause.code) || "")
+    );
+  const run = async (text, params) => {
+    const res = await sql.query(text, params || [], { fullResults: true });
+    return { rows: res.rows, rowCount: res.rowCount };
+  };
   pool = {
     async query(text, params) {
-      const res = await sql.query(text, params || [], { fullResults: true });
-      return { rows: res.rows, rowCount: res.rowCount };
+      // Only SELECTs are retried (safe to repeat); writes are never repeated.
+      const canRetry = /^\s*select/i.test(text);
+      let lastErr;
+      for (let attempt = 0; attempt < (canRetry ? 3 : 1); attempt++) {
+        try {
+          return await run(text, params);
+        } catch (e) {
+          lastErr = e;
+          if (!canRetry || !isTransient(e)) throw e;
+          await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
+        }
+      }
+      throw lastErr;
     },
     on() {},
   };
@@ -56,9 +79,10 @@ if (isNeon) {
   pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: needsSsl ? { rejectUnauthorized: false } : false,
-    connectionTimeoutMillis: 15000,
+    connectionTimeoutMillis: 30000,
     max: 10,
     idleTimeoutMillis: 30000,
+    query_timeout: 30000,
   });
   pool.on("error", (err) => {
     console.error("[db] Unexpected Postgres error on idle client:", err.message);
@@ -213,11 +237,38 @@ async function getNewsImage(id) {
   return rows[0] || null;
 }
 
-// Admin panel + duplicate checks: everything, including drafts.
+// Admin panel: everything, including drafts, NEWEST SAVED FIRST (so a story the agent
+// just created is always at the top, whatever publish date its source article had). base64 images are NOT sent inside
+// the list (they can be several MB each and made this query time out); they are
+// replaced by the cacheable /api/news/:id/image URL instead.
 async function getAllNewsIncludingDrafts() {
   await ready();
-  const { rows } = await pool.query(`SELECT * FROM news ORDER BY date DESC NULLS LAST, created_at DESC`);
-  return rows.map(rowToItem);
+  const { rows } = await pool.query(
+    `SELECT id, title, excerpt, body, category, language, date, source_url, source_name,
+            CASE WHEN image LIKE 'data:%' THEN NULL ELSE image END AS image,
+            (image LIKE 'data:%') AS image_inline,
+            video, featured, trending, status, created_by
+       FROM news ORDER BY created_at DESC`
+  );
+  return rows.map((r) => {
+    const it = rowToItem(r);
+    if (r.image_inline) it.image = `/api/news/${encodeURIComponent(r.id)}/image`;
+    return it;
+  });
+}
+
+// Tiny query for the AI agent's duplicate check: no body, no images.
+async function getKnownSources() {
+  await ready();
+  const { rows } = await pool.query(`SELECT source_url, title FROM news`);
+  return rows.map((r) => ({ sourceUrl: r.source_url, title: r.title }));
+}
+
+// Stories whose image is a fake pollinations.ai link (startup clean-up).
+async function getPollinationsStories() {
+  await ready();
+  const { rows } = await pool.query(`SELECT id, title FROM news WHERE image LIKE '%pollinations.ai%'`);
+  return rows;
 }
 
 async function getNewsById(id) {
@@ -259,37 +310,62 @@ async function addNews(item) {
 
 async function addManyNews(items) {
   await ready();
-  const added = [];
+  if (!items.length) return [];
+
+  // Each request to Neon costs a full network round trip (1-3s on slow links), so
+  // do the whole job in TWO requests instead of two per story:
+  //   1) one query to find which titles / source URLs already exist
+  //   2) one multi-row INSERT for everything that is new
+  const titles = items.map((i) => String(i.title || "").trim().toLowerCase());
+  const urls = items.map((i) => i.sourceUrl).filter(Boolean);
+  const { rows: dupes } = await pool.query(
+    `SELECT lower(title) AS t, source_url FROM news
+      WHERE lower(title) = ANY($1::text[]) OR source_url = ANY($2::text[])`,
+    [titles, urls]
+  );
+  const seenTitles = new Set(dupes.map((d) => d.t));
+  const seenUrls = new Set(dupes.map((d) => d.source_url).filter(Boolean));
+
+  const fresh = [];
   for (const item of items) {
-    const dupe = await pool.query(
-      `SELECT 1 FROM news WHERE lower(title) = lower($1) OR (source_url IS NOT NULL AND source_url = $2) LIMIT 1`,
-      [item.title.trim(), item.sourceUrl || null]
-    );
-    if (dupe.rowCount > 0) continue;
-    const { rows } = await pool.query(
-      `INSERT INTO news (id, title, excerpt, body, category, language, date, source_url, source_name, image, video, featured, trending, status, created_by)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
-       RETURNING *`,
-      [
-        item.id,
-        item.title,
-        item.excerpt,
-        item.body || item.excerpt,
-        item.category || "general",
-        item.language || "urdu",
-        item.date || new Date().toISOString().slice(0, 10),
-        item.sourceUrl || null,
-        item.sourceName || null,
-        item.image || null,
-        item.video || null,
-        Boolean(item.featured),
-        Boolean(item.trending),
-        item.status === "draft" ? "draft" : "published",
-        item.createdBy || "ai-gemini",
-      ]
-    );
-    added.push(rowToItem(rows[0]));
+    const t = String(item.title || "").trim().toLowerCase();
+    if (seenTitles.has(t) || (item.sourceUrl && seenUrls.has(item.sourceUrl))) continue;
+    seenTitles.add(t);
+    if (item.sourceUrl) seenUrls.add(item.sourceUrl);
+    fresh.push(item);
   }
+  if (!fresh.length) return [];
+
+  const vals = [];
+  const tuples = fresh.map((item) => {
+    const base = vals.length;
+    vals.push(
+      item.id,
+      item.title,
+      item.excerpt,
+      item.body || item.excerpt,
+      item.category || "general",
+      item.language || "urdu",
+      item.date || new Date().toISOString().slice(0, 10),
+      item.sourceUrl || null,
+      item.sourceName || null,
+      item.image || null,
+      item.video || null,
+      Boolean(item.featured),
+      Boolean(item.trending),
+      item.status === "draft" ? "draft" : "published",
+      item.createdBy || "ai-gemini"
+    );
+    return "(" + Array.from({ length: 15 }, (_, k) => "$" + (base + k + 1)).join(",") + ")";
+  });
+  const { rows } = await pool.query(
+    `INSERT INTO news (id, title, excerpt, body, category, language, date, source_url, source_name, image, video, featured, trending, status, created_by)
+     VALUES ${tuples.join(",")}
+     ON CONFLICT (id) DO NOTHING
+     RETURNING *`,
+    vals
+  );
+  const added = rows.map(rowToItem);
   if (added.length) bump();
   return added;
 }
@@ -301,6 +377,11 @@ async function updateNews(id, updates) {
     date: "date", sourceUrl: "source_url", sourceName: "source_name", image: "image", video: "video",
     featured: "featured", trending: "trending", status: "status", createdBy: "created_by",
   };
+  // The admin list shows base64 images as /api/news/:id/image; never save that URL back.
+  if (typeof updates.image === "string" && /^\/api\/news\/[^/]+\/image$/.test(updates.image)) {
+    updates = { ...updates };
+    delete updates.image;
+  }
   const sets = [];
   const vals = [];
   let i = 1;
@@ -333,6 +414,8 @@ module.exports = {
   getNewsImage,
   getVersion,
   getAllNewsIncludingDrafts,
+  getKnownSources,
+  getPollinationsStories,
   isPublished,
   getNewsById,
   addNews,

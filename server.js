@@ -129,8 +129,7 @@ if (!process.env.DATABASE_URL) console.warn("DATABASE_URL missing — see README
 (async () => {
   try {
     await db.ready();
-    const allNews = await db.getAllNewsIncludingDrafts();
-    const bad = allNews.filter((n) => n.image && String(n.image).includes("pollinations.ai"));
+    const bad = await db.getPollinationsStories();
     if (bad.length > 0) {
       console.log(`[startup] Removing ${bad.length} fake pollinations.ai images...`);
       for (const n of bad) {
