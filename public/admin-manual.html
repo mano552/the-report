@@ -231,8 +231,11 @@
       totalEl: document.getElementById('totalNews'),
       filterLangId: 'filterLang',
       filterCatId: 'filterCategory',
+      // Manual panel: hide everything the AI agent generated.
+      filterFn: (n) => n.createdBy !== 'ai-gemini',
       onAfterRender: () => {
-        const all = window.__allNews || [];
+        const all = (window.__allNews || []).filter((n) => n.createdBy !== 'ai-gemini');
+        document.getElementById('totalNews').textContent = all.length;
         document.getElementById('urduNews').textContent = all.filter(n => n.language === 'urdu').length;
         document.getElementById('englishNews').textContent = all.filter(n => n.language === 'english').length;
       },
