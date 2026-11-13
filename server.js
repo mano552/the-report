@@ -93,10 +93,10 @@ app.get("/author/:slug", (req, res) => res.sendFile(INDEX_HTML));
 
 // --- Admin panel routes ---
 // /admin        -> a small chooser page (pick AI panel or Manual panel)
-// /admin/ai     -> AI AGENT panel only (run the agent, approve/manage AI drafts)
+// /admin/ai.zaryab -> AI AGENT panel only (SECRET path, not linked from anywhere; the old /admin/ai no longer exists) (run the agent, approve/manage AI drafts)
 // /admin/manual -> MANUAL panel only (add/edit/delete news by hand)
 app.get("/admin", (req, res) => res.sendFile(path.join(__dirname, "public", "admin.html")));
-app.get("/admin/ai", (req, res) => res.sendFile(path.join(__dirname, "public", "admin-ai.html")));
+app.get("/admin/ai.zaryab", (req, res) => res.sendFile(path.join(__dirname, "public", "admin-ai.html")));
 app.get("/admin/manual", (req, res) => res.sendFile(path.join(__dirname, "public", "admin-manual.html")));
 
 app.listen(PORT, () => {

@@ -16,7 +16,7 @@
   .wrap img { width: 64px; height: 64px; border-radius: 50%; margin-bottom: 16px; }
   h1 { font-size: 1.8rem; margin-bottom: 8px; }
   p.sub { color: #C7D0E8; margin-bottom: 36px; }
-  .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .choices { display: grid; grid-template-columns: 1fr; gap: 20px; max-width: 360px; margin: 0 auto; }
   @media (max-width: 600px) { .choices { grid-template-columns: 1fr; } }
   .choice-card {
     background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
@@ -35,13 +35,8 @@
 <div class="wrap">
   <img src="/assets/logo.png" alt="The Report">
   <h1>THE REPORT — Admin</h1>
-  <p class="sub">Choose which panel you want to use</p>
+  <p class="sub">Manual news panel</p>
   <div class="choices">
-    <a class="choice-card" href="/admin/ai">
-      <div class="choice-icon">🤖</div>
-      <h2>AI Agent Panel</h2>
-      <p>Run the AI news agent, review its generated drafts, and publish or edit them. No manual writing here.</p>
-    </a>
     <a class="choice-card" href="/admin/manual">
       <div class="choice-icon">✍️</div>
       <h2>Manual News Panel</h2>
