@@ -83,6 +83,11 @@
           <span class="btn-title">The Report Family</span>
           <span class="btn-desc">Our Authors &amp; Team</span>
         </button>
+        <button class="homepage-btn" data-page="investigator">
+          <span class="btn-icon">🔍</span>
+          <span class="btn-title">The Investigator</span>
+          <span class="btn-desc">Investigative Reports &amp; Exposés</span>
+        </button>
       </div>
     </div>
   </section>
@@ -336,39 +341,14 @@
       </div>
     </div>
     <div class="inv-section">
-      <div class="section-head">
-        <div class="k">INVESTIGATIVE REPORTS</div>
-        <h2>Deep-Dive Stories & Exposés</h2>
+      <div class="inv-cats" id="invCats"></div>
+      <div class="inv-langs" id="invLangs">
+        <button type="button" class="inv-lang active" data-lang="">All</button>
+        <button type="button" class="inv-lang" data-lang="english">English</button>
+        <button type="button" class="inv-lang urdu" data-lang="urdu">اردو</button>
       </div>
-      <div class="inv-placeholder">
-        <i class="fas fa-file-magnifying-glass"></i>
-        <h3>Coming Soon</h3>
-        <p>Our investigative journalism team is working on groundbreaking stories. Stay tuned for hard-hitting reports that uncover the truth.</p>
-      </div>
-      <div class="section-head" style="margin-top:60px;">
-        <div class="k">OUR INVESTIGATORS</div>
-        <h2>Meet the Journalist Team</h2>
-      </div>
-      <div class="journalist-grid">
-        <div class="journalist-card">
-          <div class="journalist-avatar"><i class="fas fa-user-secret"></i></div>
-          <h4>Senior Investigator</h4>
-          <p>Lead investigative journalist with 10+ years of experience in uncovering stories that matter.</p>
-          <span class="journalist-stories">Investigations: Coming Soon</span>
-        </div>
-        <div class="journalist-card">
-          <div class="journalist-avatar"><i class="fas fa-user-secret"></i></div>
-          <h4>Data Journalist</h4>
-          <p>Specializing in data-driven investigations and analysis of public records.</p>
-          <span class="journalist-stories">Investigations: Coming Soon</span>
-        </div>
-        <div class="journalist-card">
-          <div class="journalist-avatar"><i class="fas fa-user-secret"></i></div>
-          <h4>Field Reporter</h4>
-          <p>Ground-level reporting from conflict zones and underreported communities.</p>
-          <span class="journalist-stories">Investigations: Coming Soon</span>
-        </div>
-      </div>
+      <div class="inv-grid" id="invList"></div>
+      <div class="load-more-wrap" id="invMore"></div>
     </div>
   </section>
 

@@ -125,6 +125,9 @@ async function init() {
   `);
   // Safe to re-run: adds columns to an older table without losing data.
   await pool.query(`ALTER TABLE news ADD COLUMN IF NOT EXISTS trending BOOLEAN DEFAULT FALSE;`);
+  // The Investigator: reporter name + reporter photo shown on each story.
+  await pool.query(`ALTER TABLE news ADD COLUMN IF NOT EXISTS reporter_name TEXT;`);
+  await pool.query(`ALTER TABLE news ADD COLUMN IF NOT EXISTS reporter_photo TEXT;`);
   await pool.query(`CREATE INDEX IF NOT EXISTS news_date_idx ON news (date DESC);`);
   await pool.query(`CREATE INDEX IF NOT EXISTS news_status_idx ON news (status);`);
   await pool.query(`CREATE INDEX IF NOT EXISTS news_source_url_idx ON news (source_url);`);
@@ -155,6 +158,8 @@ function rowToItem(r) {
     trending: r.trending,
     status: r.status,
     createdBy: r.created_by,
+    reporterName: r.reporter_name || null,
+    reporterPhoto: r.reporter_photo || null,
   };
 }
 
@@ -180,7 +185,7 @@ async function getAllNews() {
 // Differences from getAllNews(): returns ONE page only, without the (large)
 // story body, with a trimmed excerpt, and never ships base64 images inside the
 // list (those are served separately from /api/news/:id/image and cached).
-async function getNewsPage({ language, category, q, author, limit = 20, offset = 0 } = {}) {
+async function getNewsPage({ language, category, q, author, section, limit = 20, offset = 0 } = {}) {
   await ready();
   limit = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
   offset = Math.max(parseInt(offset, 10) || 0, 0);
@@ -190,11 +195,15 @@ async function getNewsPage({ language, category, q, author, limit = 20, offset =
   const add = (v) => { vals.push(v); return "$" + vals.length; };
 
   if (language) where.push(`language = ${add(language)}`);
-  if (author) {
+  if (section === "investigator") {
+    // The Investigator page: only stories posted from the Investigator panel.
+    where.push(`created_by = 'investigator'`);
+  } else if (author) {
     where.push(`created_by = ${add("author:" + author)}`);
   } else {
-    // Stories posted from an author's own panel show only on that author's profile.
-    where.push(`(created_by IS NULL OR created_by NOT LIKE 'author:%')`);
+    // Stories posted from an author's own panel show only on that author's profile,
+    // and Investigator stories show only on the Investigator page.
+    where.push(`(created_by IS NULL OR (created_by NOT LIKE 'author:%' AND created_by <> 'investigator'))`);
   }
   if (category === "trending") where.push(`trending = TRUE`);
   else if (category) where.push(`category = ${add(category)}`);
@@ -213,7 +222,7 @@ async function getNewsPage({ language, category, q, author, limit = 20, offset =
             source_url, source_name,
             CASE WHEN image LIKE 'data:%' THEN NULL ELSE image END AS image,
             (image LIKE 'data:%') AS image_inline,
-            video, featured, trending, status, created_by
+            video, featured, trending, status, created_by, reporter_name, reporter_photo
        FROM news
       WHERE ${where.join(" AND ")}
       ORDER BY date DESC NULLS LAST, created_at DESC
@@ -280,8 +289,8 @@ async function getNewsById(id) {
 async function addNews(item) {
   await ready();
   const { rows } = await pool.query(
-    `INSERT INTO news (id, title, excerpt, body, category, language, date, source_url, source_name, image, video, featured, trending, status, created_by)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+    `INSERT INTO news (id, title, excerpt, body, category, language, date, source_url, source_name, image, video, featured, trending, status, created_by, reporter_name, reporter_photo)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
      RETURNING *`,
     [
       item.id,
@@ -299,6 +308,8 @@ async function addNews(item) {
       Boolean(item.trending),
       item.status === "draft" ? "draft" : "published",
       item.createdBy || "manual",
+      item.reporterName || null,
+      item.reporterPhoto || null,
     ]
   );
   bump();
@@ -376,6 +387,7 @@ async function updateNews(id, updates) {
     title: "title", excerpt: "excerpt", body: "body", category: "category", language: "language",
     date: "date", sourceUrl: "source_url", sourceName: "source_name", image: "image", video: "video",
     featured: "featured", trending: "trending", status: "status", createdBy: "created_by",
+    reporterName: "reporter_name", reporterPhoto: "reporter_photo",
   };
   // The admin list shows base64 images as /api/news/:id/image; never save that URL back.
   if (typeof updates.image === "string" && /^\/api\/news\/[^/]+\/image$/.test(updates.image)) {

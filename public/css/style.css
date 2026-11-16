@@ -633,3 +633,30 @@ footer { position: relative; z-index: 1; background: var(--navy-deep); color: #C
   .news-content p, #news-urdu .news-content p { -webkit-line-clamp: 2; font-size: 0.8rem; }
   .news-category-badge { font-size: 0.5rem; padding: 2px 7px; }
 }
+
+/* ===== THE INVESTIGATOR — news list ===== */
+.inv-cats {
+  display: flex; flex-wrap: nowrap; gap: 10px; overflow-x: auto; padding: 28px 2px 10px;
+  scrollbar-width: thin; -webkit-overflow-scrolling: touch;
+}
+.inv-chip {
+  flex: none; border: 1.5px solid var(--line); background: var(--card); color: var(--ink);
+  padding: 9px 18px; border-radius: 999px; font-weight: 700; font-size: 0.88rem; cursor: pointer; transition: all 0.2s;
+}
+.inv-chip:hover { border-color: var(--teal); color: var(--teal); }
+.inv-chip.active { background: var(--teal); border-color: var(--teal); color: #fff; }
+.inv-langs { display: flex; gap: 8px; margin: 6px 0 22px; }
+.inv-lang {
+  border: 1.5px solid var(--line); background: transparent; color: var(--ink-soft);
+  padding: 6px 16px; border-radius: 8px; font-weight: 700; font-size: 0.82rem; cursor: pointer;
+}
+.inv-lang.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+.inv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
+.inv-badge {
+  position: absolute; top: 12px; left: 12px; background: var(--teal); color: #fff; font-size: 0.7rem; font-weight: 800;
+  letter-spacing: 0.06em; text-transform: uppercase; padding: 5px 11px; border-radius: 999px;
+}
+.inv-reporter { display: flex; align-items: center; gap: 8px; margin: 10px 0 4px; font-weight: 700; font-size: 0.85rem; color: var(--ink); }
+.inv-reporter img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; border: 2px solid var(--teal); }
+.article .inv-reporter { margin: 4px 0 18px; font-size: 0.95rem; }
+.article .inv-reporter img { width: 40px; height: 40px; }

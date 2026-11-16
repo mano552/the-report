@@ -32,6 +32,7 @@ app.use(express.json({ limit: "15mb" }));
 // --- API ---
 app.use("/api/news", newsRoutes);
 app.use("/api/author", require("./src/routes/authorPanel")); // per-author panels
+app.use("/api/investigator", require("./src/routes/investigatorPanel")); // The Investigator panel
 
 // --- Static frontend (public/index.html, css, js, assets) ---
 app.use(
@@ -91,6 +92,9 @@ app.get("/author/:slug", (req, res) => res.sendFile(INDEX_HTML));
   app.get(p, (req, res) => res.sendFile(path.join(__dirname, "public", "author-panel.html")))
 );
 
+// --- The Investigator panel (own password: INVESTIGATOR_KEY) ---
+app.get("/investigator-panel", (req, res) => res.sendFile(path.join(__dirname, "public", "investigator-panel.html")));
+
 // --- Admin panel routes ---
 // /admin        -> a small chooser page (pick AI panel or Manual panel)
 // /admin/ai.zaryab -> AI AGENT panel only (SECRET path, not linked from anywhere; the old /admin/ai no longer exists) (run the agent, approve/manage AI drafts)
@@ -122,6 +126,7 @@ if (!process.env.NEWSDATA_API_KEY || !process.env.GEMINI_API_KEY) {
   console.warn("NEWSDATA_API_KEY and/or GEMINI_API_KEY missing — the AI agent will fail until you add them (both free).");
 }
 if (!process.env.ADMIN_KEY) console.warn("ADMIN_KEY missing — the admin panel cannot log in.");
+if (!process.env.INVESTIGATOR_KEY) console.warn("INVESTIGATOR_KEY missing — the Investigator panel cannot log in.");
 ["HAIDER","ADEEL","BABAR","JABBAR"].forEach((n) => { if (!process.env["AUTHOR_KEY_" + n]) console.warn("AUTHOR_KEY_" + n + " missing — that author panel cannot log in."); });
 if (!process.env.DATABASE_URL) console.warn("DATABASE_URL missing — see README.md > 'PostgreSQL setup' before the site will show/save news.");
 

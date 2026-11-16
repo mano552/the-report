@@ -84,6 +84,7 @@ function route() {
   showPage(page);
   if (page === "news-urdu") loadNews("urdu");
   if (page === "news-english") loadNews("english");
+  if (page === "investigator") loadInvestigator();
 }
 
 window.addEventListener("popstate", route);
@@ -378,8 +379,9 @@ async function loadArticle(id) {
 
     const cfg = LANG[a.language] || LANG.english;
     const u = a.language === "urdu" ? "urdu" : "";
-    articleBackPath = cfg.path;
-    backBtn.textContent = cfg.t.back;
+    const inv = a.createdBy === "investigator";
+    articleBackPath = inv ? "/investigator" : cfg.path;
+    backBtn.textContent = inv ? "← Back to The Investigator" : cfg.t.back;
     document.title = `${a.title} — THE REPORT`;
 
     const paragraphs = String(a.body || a.excerpt || "")
@@ -396,9 +398,10 @@ async function loadArticle(id) {
       <article class="article" ${cfg.rtl ? 'dir="rtl"' : ""}>
         <div class="article-meta">
           <span class="badge-red">${escapeHtml(a.language === "urdu" ? getCategoryUrdu(a.category) : (a.category || "general").toUpperCase())}</span>
-          <span>${escapeHtml(displayDate(a))}</span>
+          <span>${escapeHtml(inv ? authorTime(a) : displayDate(a))}</span>
         </div>
         <h1 class="article-title ${u}">${escapeHtml(a.title)}</h1>
+        ${inv && a.reporterName ? reporterHtml(a) : ""}
         <div class="article-media">${mediaHtml(a, true)}</div>
         <div class="article-body">${paragraphs}</div>
         <div class="article-share">
@@ -497,6 +500,121 @@ const escapeAttr = escapeHtml;
     }
   });
 });
+
+// ================ The Investigator page ================
+// Stories posted from /investigator-panel. Category chips in one line, plus a language filter.
+const INV_CATS = [
+  ["", "Latest"], ["trending", "Trending"], ["health", "Health"], ["crime", "Crime"],
+  ["politics", "Politics"], ["support", "Support"], ["education", "Education"],
+  ["business", "Business"], ["sports", "Sports"], ["international", "International"],
+  ["technology", "Technology"], ["entertainment", "Entertainment"],
+];
+const INV_CAT_UR = {
+  trending: "ٹرینڈنگ", health: "صحت", crime: "کرائم", politics: "سیاست", support: "سپورٹ", education: "تعلیم",
+  business: "کاروبار", sports: "کھیل", international: "انٹرنیشنل", technology: "ٹیکنالوجی", entertainment: "تفریح", general: "عمومی",
+};
+const inv = { cat: "", lang: "", items: [], page: 0, hasMore: false, loading: false, req: 0, built: false };
+
+function reporterHtml(a) {
+  const photo = safeUrl(a.reporterPhoto);
+  return `<div class="inv-reporter">${photo ? `<img src="${escapeAttr(photo)}" alt="">` : ""}<span>${escapeHtml(a.reporterName || "")}</span></div>`;
+}
+
+function buildInvChips() {
+  if (inv.built) return;
+  inv.built = true;
+  document.getElementById("invCats").innerHTML = INV_CATS.map(([v, l]) =>
+    `<button type="button" class="inv-chip${v === inv.cat ? " active" : ""}" data-cat="${v}">${l}</button>`).join("");
+  document.getElementById("invCats").addEventListener("click", (e) => {
+    const b = e.target.closest(".inv-chip"); if (!b) return;
+    inv.cat = b.dataset.cat;
+    document.querySelectorAll("#invCats .inv-chip").forEach((x) => x.classList.toggle("active", x === b));
+    reloadInvestigator();
+  });
+  document.getElementById("invLangs").addEventListener("click", (e) => {
+    const b = e.target.closest(".inv-lang"); if (!b) return;
+    inv.lang = b.dataset.lang;
+    document.querySelectorAll("#invLangs .inv-lang").forEach((x) => x.classList.toggle("active", x === b));
+    reloadInvestigator();
+  });
+  document.getElementById("invMore").addEventListener("click", (e) => {
+    if (e.target.closest("button")) loadMoreInvestigator();
+  });
+}
+
+function loadInvestigator() {
+  buildInvChips();
+  if (!inv.items.length) reloadInvestigator(); else renderInvestigator();
+}
+
+async function fetchInvPage(page) {
+  const p = new URLSearchParams({ section: "investigator", page: String(page), limit: "12" });
+  if (inv.cat) p.set("category", inv.cat);
+  if (inv.lang) p.set("language", inv.lang);
+  const res = await fetch("/api/news?" + p.toString());
+  if (!res.ok) throw new Error("API error " + res.status);
+  return res.json();
+}
+
+async function reloadInvestigator() {
+  const reqId = ++inv.req;
+  document.getElementById("invList").innerHTML = `<p class="loading-msg">Loading...</p>`;
+  document.getElementById("invMore").innerHTML = "";
+  inv.loading = true;
+  try {
+    const data = await fetchInvPage(1);
+    if (reqId !== inv.req) return;
+    inv.items = data.news || []; inv.page = 1; inv.hasMore = Boolean(data.hasMore); inv.loading = false;
+    renderInvestigator();
+  } catch (err) {
+    if (reqId !== inv.req) return;
+    inv.loading = false;
+    document.getElementById("invList").innerHTML = `<p class="loading-msg">Could not load stories. Please try again.</p>`;
+  }
+}
+
+async function loadMoreInvestigator() {
+  if (inv.loading || !inv.hasMore) return;
+  const reqId = inv.req;
+  inv.loading = true; renderInvestigator();
+  try {
+    const data = await fetchInvPage(inv.page + 1);
+    if (reqId !== inv.req) return;
+    inv.items = inv.items.concat(data.news || []); inv.page += 1; inv.hasMore = Boolean(data.hasMore);
+  } catch (err) { console.error("Investigator load more error:", err); }
+  inv.loading = false; renderInvestigator();
+}
+
+function renderInvestigator() {
+  const list = document.getElementById("invList");
+  if (!inv.items.length) {
+    list.innerHTML = `<p class="loading-msg">No stories in this category yet. <span class="urdu">ابھی کوئی خبر موجود نہیں</span></p>`;
+    document.getElementById("invMore").innerHTML = "";
+    return;
+  }
+  list.innerHTML = inv.items.map((a) => {
+    const ur = a.language === "urdu";
+    const u = ur ? "urdu" : "";
+    const link = `/news/${encodeURIComponent(a.id)}`;
+    const cat = ur ? (INV_CAT_UR[a.category] || "خبریں") : (a.category || "general");
+    return `
+    <div class="news-card-modern clickable" data-nav="${escapeAttr(link)}" ${ur ? 'dir="rtl"' : ""}>
+      <div class="news-image">
+        ${imageHtml(a)}
+        <span class="inv-badge">${escapeHtml(cat)}</span>
+      </div>
+      <div class="news-content">
+        <h3 class="${u}">${escapeHtml(a.title)}</h3>
+        <p class="${u}">${escapeHtml(shorten(a.excerpt, 150))}</p>
+        ${a.reporterName ? reporterHtml(a) : ""}
+        <div class="news-meta"><span class="news-date" dir="ltr">${escapeHtml(authorTime(a))}</span></div>
+      </div>
+    </div>`;
+  }).join("");
+  document.getElementById("invMore").innerHTML = inv.hasMore
+    ? `<button type="button" class="load-more-btn" ${inv.loading ? "disabled" : ""}>${inv.loading ? "Loading..." : "Load more"}</button>`
+    : "";
+}
 
 // Open the right page for the current URL
 route();

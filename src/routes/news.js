@@ -53,7 +53,7 @@ function cacheSet(key, v) {
 // The admin panels call this WITHOUT "limit"/"page" but WITH x-admin-key and
 // still receive the full list incl. drafts, exactly as before.
 router.get("/", wrap(async (req, res) => {
-  const wantsPaging = "limit" in req.query || "page" in req.query || "language" in req.query;
+  const wantsPaging = "limit" in req.query || "page" in req.query || "language" in req.query || "section" in req.query;
   if (isAdmin(req) && !wantsPaging) {
     res.set("Cache-Control", "no-store");
     return res.json({ news: await db.getAllNewsIncludingDrafts() });
@@ -66,6 +66,7 @@ router.get("/", wrap(async (req, res) => {
     category: req.query.category ? String(req.query.category).slice(0, 40) : undefined,
     q: req.query.q ? String(req.query.q).slice(0, 100) : undefined,
     author: req.query.author ? String(req.query.author).slice(0, 60) : undefined,
+    section: req.query.section === "investigator" ? "investigator" : undefined,
     limit,
     offset: (page - 1) * limit,
   };
