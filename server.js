@@ -88,7 +88,7 @@ app.get("/news/:id", async (req, res) => {
 app.get("/author/:slug", (req, res) => res.sendFile(INDEX_HTML));
 
 // --- Separate panel for each author (own password, only their own news) ---
-["/haider", "/adeel", "/babar", "/jabbar"].forEach((p) =>
+["/haider", "/adeel", "/babar", "/jabbar", "/majid", "/nasir"].forEach((p) =>
   app.get(p, (req, res) => res.sendFile(path.join(__dirname, "public", "author-panel.html")))
 );
 
@@ -127,7 +127,7 @@ if (!process.env.NEWSDATA_API_KEY || !process.env.GEMINI_API_KEY) {
 }
 if (!process.env.ADMIN_KEY) console.warn("ADMIN_KEY missing — the admin panel cannot log in.");
 if (!process.env.INVESTIGATOR_KEY) console.warn("INVESTIGATOR_KEY missing — the Investigator panel cannot log in.");
-["HAIDER","ADEEL","BABAR","JABBAR"].forEach((n) => { if (!process.env["AUTHOR_KEY_" + n]) console.warn("AUTHOR_KEY_" + n + " missing — that author panel cannot log in."); });
+["HAIDER","ADEEL","BABAR","JABBAR","MAJID","NASIR"].forEach((n) => { if (!process.env["AUTHOR_KEY_" + n]) console.warn("AUTHOR_KEY_" + n + " missing — that author panel cannot log in."); });
 if (!process.env.DATABASE_URL) console.warn("DATABASE_URL missing — see README.md > 'PostgreSQL setup' before the site will show/save news.");
 
 // --- Auto-fix: remove any pollinations.ai images on startup ---

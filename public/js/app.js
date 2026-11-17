@@ -302,10 +302,12 @@ function renderNews(lang) {
 // ================ Author profile page ================
 // Shows every published story (Urdu + English) whose `author` field matches.
 const AUTHORS = {
-  "adeel-shah": { name: "Syed Adeel Asghar Shah", photo: "/assets/adeel-shah.png", match: ["adeel"] },
-  "babar-aladdin": { name: "Brigadier Babar Ala-ud-Din, SI(M) (R)", photo: "/assets/babar-aladdin.png", match: ["babar"] },
-  "abdul-jabbar-bhatti": { name: "Abdul Jabbar Bhatti", photo: "/assets/abdul-jabbar-bhatti.png", match: ["jabbar", "bhatti"] },
+  "adeel-shah": { name: "Syed Adeel Asghar Shah", photo: "/assets/adeel-shah.png", match: ["adeel"], official: true },
+  "babar-aladdin": { name: "Brigadier Babar Ala-ud-Din, SI(M) (R)", photo: "/assets/babar-aladdin.png", match: ["babar"], official: true },
+  "abdul-jabbar-bhatti": { name: "Abdul Jabbar Bhatti", photo: "/assets/abdul-jabbar-bhatti.png", match: ["jabbar", "bhatti"], official: true },
   "haider-munir": { name: "Haider Munir", photo: "/assets/haider-munir.jpg", match: ["haider", "munir"] },
+  "rao-majid-ali": { name: "Rao Majid Ali", photo: "/assets/rao-majid-ali.jpg", match: ["majid"], official: true },
+  "nasir-abbas-tarar": { name: "Nasir Abbas Tarar", photo: "/assets/nasir-abbas-tarar.jpg", match: ["nasir", "tarar"], official: true },
 };
 
 function authorTime(a) {
@@ -326,7 +328,7 @@ async function loadAuthor(slug) {
     return;
   }
   document.title = `${au.name} — THE REPORT`;
-  head.innerHTML = `<img src="${escapeAttr(au.photo)}" alt="${escapeAttr(au.name)}"><h1>${escapeHtml(au.name)}</h1>`;
+  head.innerHTML = `<img src="${escapeAttr(au.photo)}" alt="${escapeAttr(au.name)}"><h1>${escapeHtml(au.name)}${au.official ? ' <span class="author-suffix">— Official Author, thereport.pk</span>' : ""}</h1>`;
   list.innerHTML = `<p class="loading-msg">Loading...</p>`;
   try {
     const resp = await fetch("/api/news?author=" + encodeURIComponent(slug) + "&limit=100");

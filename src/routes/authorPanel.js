@@ -1,4 +1,4 @@
-// Separate panels for each author: /haider, /adeel, /babar, /jabbar
+// Separate panels for each author: /haider, /adeel, /babar, /jabbar, /majid, /nasir
 // Each author has their OWN password (set in .env, never in code) and can only
 // see / add / edit / delete THEIR OWN news. The old /admin panels are untouched.
 //
@@ -16,6 +16,8 @@ const AUTHORS = {
   adeel: { profile: "adeel-shah", name: "Syed Adeel Asghar Shah", env: "AUTHOR_KEY_ADEEL" },
   babar: { profile: "babar-aladdin", name: "Brigadier Babar Ala-ud-Din", env: "AUTHOR_KEY_BABAR" },
   jabbar: { profile: "abdul-jabbar-bhatti", name: "Abdul Jabbar Bhatti", env: "AUTHOR_KEY_JABBAR" },
+  majid: { profile: "rao-majid-ali", name: "Rao Majid Ali", env: "AUTHOR_KEY_MAJID" },
+  nasir: { profile: "nasir-abbas-tarar", name: "Nasir Abbas Tarar", env: "AUTHOR_KEY_NASIR" },
 };
 
 const sha = (s) => crypto.createHash("sha256").update(String(s)).digest();

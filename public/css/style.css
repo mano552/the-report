@@ -660,3 +660,46 @@ footer { position: relative; z-index: 1; background: var(--navy-deep); color: #C
 .inv-reporter img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; border: 2px solid var(--teal); }
 .article .inv-reporter { margin: 4px 0 18px; font-size: 0.95rem; }
 .article .inv-reporter img { width: 40px; height: 40px; }
+
+/* "— Official Author, thereport.pk" line after an official author's name */
+.author-suffix { display: block; font-family: 'Inter', sans-serif; font-size: 0.62em; font-weight: 600; color: var(--ink-soft); margin-top: 4px; letter-spacing: 0; }
+
+/* ===== THE REPORT MEDIA SOLUTIONS — services list + WhatsApp buttons ===== */
+.ms-wrap { display: grid; gap: 24px; max-width: 920px; margin: 0 auto; }
+.ms-card {
+  background: var(--card); border: 1px solid var(--line); border-left: 5px solid var(--red);
+  border-radius: 14px; padding: 26px 28px; box-shadow: 0 4px 16px rgba(10,37,87,0.08);
+}
+.ms-card h3 { font-family: 'Oswald', sans-serif; font-weight: 600; font-size: clamp(1.15rem, 2.6vw, 1.5rem); margin: 0 0 6px; color: var(--ink); line-height: 1.3; }
+.ms-sub { color: var(--red); font-style: italic; font-weight: 600; margin: 0 0 14px; font-size: 0.98rem; }
+.ms-list { margin: 0 0 20px; padding-left: 22px; color: var(--ink-soft); line-height: 1.9; }
+.wa-btn {
+  display: inline-flex; align-items: center; gap: 10px; background: #25D366; color: #fff !important; text-decoration: none;
+  font-weight: 800; padding: 13px 26px; border-radius: 999px; box-shadow: 0 8px 22px rgba(37,211,102,0.35); transition: all 0.3s ease;
+}
+.wa-btn:hover { background: #1ebe5b; transform: translateY(-2px); }
+.wa-btn i { font-size: 1.3rem; }
+.ms-cta { max-width: 920px; margin: 40px auto 0; text-align: center; background: linear-gradient(135deg, var(--red), #8C1815); color: #fff; border-radius: 18px; padding: 36px 22px; }
+.ms-cta h3 { font-family: 'Oswald', sans-serif; font-size: clamp(1.3rem, 3vw, 1.8rem); margin: 0 0 8px; }
+.ms-cta p { margin: 0 0 20px; opacity: 0.9; }
+@media (max-width: 600px) { .ms-card { padding: 20px 18px; } .wa-btn { width: 100%; justify-content: center; } }
+
+/* Services: one headline per service; click it to open the details + WhatsApp button */
+details.ms-card { padding: 0; }
+details.ms-card > summary {
+  list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 22px 26px;
+}
+details.ms-card > summary::-webkit-details-marker { display: none; }
+details.ms-card > summary h3 { margin: 0; }
+details.ms-card > summary::after {
+  content: "+"; flex: none; width: 36px; height: 36px; border-radius: 50%; background: var(--red); color: #fff;
+  display: grid; place-items: center; font-size: 1.5rem; font-weight: 700; line-height: 1; transition: transform 0.25s ease;
+}
+details.ms-card[open] > summary::after { content: "\2212"; }
+details.ms-card:hover { border-color: var(--red); }
+details.ms-card > summary:focus-visible { outline: 3px solid var(--red); outline-offset: -3px; border-radius: 14px; }
+.ms-body { padding: 0 26px 26px; }
+@media (max-width: 600px) { details.ms-card > summary { padding: 18px; } .ms-body { padding: 0 18px 20px; } }
+
+/* Services hero: no button any more, so tighten the space under the subtitle */
+#services .hero p.lede { margin-bottom: 0; }
